@@ -1,65 +1,198 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { isFirebaseConfigured } from "@/lib/firebase";
+
+export default function LandingPage() {
+  const { user, signInWithGoogle, loading } = useAuth();
+  const router = useRouter();
+
+  const features = [
+    {
+      title: "Focused roadmap",
+      desc: "Turn rough ideas into clear priorities with a workspace that keeps product, design, and delivery aligned.",
+    },
+    {
+      title: "Frictionless auth",
+      desc: "Use email and password or Google sign-in with one consistent session flow across the app.",
+    },
+    {
+      title: "Execution dashboard",
+      desc: "Keep milestones, team activity, and delivery health visible without a cluttered interface.",
+    },
+    {
+      title: "Production-ready structure",
+      desc: "A cleaner template with less hardcoded logic so you can extend it safely instead of fighting it.",
+    },
+  ];
+
+  const stats = [
+    { value: "4", label: "Core screens" },
+    { value: "2", label: "Auth methods" },
+    { value: "1", label: "Shared session flow" },
+    { value: "0", label: "JWT required" },
+  ];
+
+  const workflow = [
+    "Start from a landing page that explains the product clearly.",
+    "Let users sign in with credentials or Google through the same backend session model.",
+    "Give the team a dashboard that surfaces the next actions instead of filler widgets.",
+  ];
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="site-shell shell-gradient">
+      <header className="topbar page-section">
+        <div className="brand-lockup">
+          <div className="brand-mark">Ix</div>
+          <div>
+            <p className="eyebrow">Iteryx</p>
+            <h1 className="brand-title">Product Workspace</h1>
+          </div>
+        </div>
+
+        <div className="topbar-actions">
+          {user ? (
+            <button className="pill-button" onClick={() => router.push("/dashboard")}>
+              Open dashboard
+            </button>
+          ) : (
+            <>
+              <Link href="/login" className="ghost-button">
+                Log in
+              </Link>
+              <Link href="/signup" className="pill-button">
+                Create account
+              </Link>
+            </>
+          )}
+        </div>
+      </header>
+
+      <section className="page-section hero-grid">
+        <div className="hero-copy animate-fade-up">
+          <p className="eyebrow">Standard Next.js app template</p>
+          <h2 className="display-title">
+            Clean product pages with one auth system that actually signs users in.
+          </h2>
+          <p className="supporting-copy">
+            This template gives you a more maintainable landing page, login page, signup page, and dashboard,
+            while removing the JWT dependency and fixing the broken sign-in state.
           </p>
+          <div className="action-row">
+            {user ? (
+              <button className="pill-button" onClick={() => router.push("/dashboard")}>
+                Go to dashboard
+              </button>
+            ) : (
+              <>
+                <Link href="/signup" className="pill-button">
+                  Start with email
+                </Link>
+                <Link href="/login" className="ghost-button">
+                  Existing account
+                </Link>
+              </>
+            )}
+          </div>
+          {!user && isFirebaseConfigured ? (
+            <button className="text-button" onClick={!loading ? signInWithGoogle : undefined} disabled={loading}>
+              {loading ? "Preparing sign-in..." : "Use Google sign-in instead"}
+            </button>
+          ) : null}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="hero-panel animate-fade-up-delay-2">
+          <div className="hero-panel-header">
+            <span className="status-chip status-live">Live session flow</span>
+            <span className="muted-label">Credentials + Google</span>
+          </div>
+          <div className="hero-metric-grid">
+            {stats.map((item) => (
+              <div key={item.label} className="metric-card">
+                <strong>{item.value}</strong>
+                <span>{item.label}</span>
+              </div>
+            ))}
+          </div>
+          <div className="stack-card">
+            <p className="stack-card-title">What changed</p>
+            <ul className="simple-list">
+              <li>Server-managed session cookies replace JWT cookies.</li>
+              <li>Credential sign-in and Google sign-in now update the same app session.</li>
+              <li>Page templates are responsive and much less hardcoded.</li>
+            </ul>
+          </div>
         </div>
-      </main>
-    </div>
+      </section>
+
+      <section className="page-section info-band animate-fade-up-delay-3">
+        {stats.map((item) => (
+          <div key={item.label} className="info-band-item">
+            <strong>{item.value}</strong>
+            <span>{item.label}</span>
+          </div>
+        ))}
+      </section>
+
+      <section className="page-section section-block">
+        <div className="section-heading">
+          <p className="eyebrow">Core benefits</p>
+          <h3>Built to give you a stable starting point</h3>
+        </div>
+        <div className="feature-grid">
+          {features.map((feature) => (
+            <article key={feature.title} className="feature-card">
+              <p className="feature-kicker">Template</p>
+              <h4>{feature.title}</h4>
+              <p>{feature.desc}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="page-section split-band">
+        <div className="section-heading compact">
+          <p className="eyebrow">Workflow</p>
+          <h3>How this setup is intended to be used</h3>
+        </div>
+        <div className="workflow-list">
+          {workflow.map((item, index) => (
+            <div key={item} className="workflow-step">
+              <span>{`0${index + 1}`}</span>
+              <p>{item}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="page-section cta-panel">
+        <div>
+          <p className="eyebrow">Ready to continue</p>
+          <h3>Use the template as a clean base and extend from here.</h3>
+        </div>
+        <div className="action-row">
+          {user ? (
+            <button className="pill-button" onClick={() => router.push("/dashboard")}>
+              Open dashboard
+            </button>
+          ) : (
+            <>
+              <Link href="/signup" className="pill-button">
+                Create account
+              </Link>
+              <Link href="/login" className="ghost-button">
+                Log in
+              </Link>
+            </>
+          )}
+        </div>
+      </section>
+      <footer className="page-footer">
+        <span>Iteryx product workspace template</span>
+        <span>{new Date().getFullYear()}</span>
+      </footer>
+    </main>
   );
 }
