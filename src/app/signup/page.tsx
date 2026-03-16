@@ -53,93 +53,116 @@ export default function SignupPage() {
   };
 
   return (
-    <main className="auth-shell shell-gradient alt-accent">
-      <section className="auth-panel animate-fade-up">
-        <aside className="auth-aside">
-          <Link href="/" className="brand-lockup solo">
-            <div className="brand-mark">Ix</div>
+    <main className="min-h-screen bg-gradient-to-br from-background via-card to-background">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        {/* Left Sidebar */}
+        <div className="space-y-8 animate-fade-in-up order-2 lg:order-1">
+          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <div className="w-10 h-10 rounded-xl bg-accent text-white flex items-center justify-center font-bold">
+              Ix
+            </div>
             <div>
-              <p className="eyebrow">Iteryx</p>
-              <h1 className="brand-title">Create an account</h1>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Iteryx</p>
+              <h1 className="text-lg font-bold">Create an account</h1>
             </div>
           </Link>
 
-          <div className="aside-copy">
-            <h2>Start with a stable auth flow.</h2>
-            <p>
+          <div className="space-y-3">
+            <h2 className="text-2xl font-bold text-foreground">Start with a stable auth flow</h2>
+            <p className="text-muted-foreground leading-relaxed">
               New users are now signed in immediately after signup through the same cookie session used by the rest of the app.
             </p>
           </div>
 
-          <div className="stack-card">
-            <p className="stack-card-title">Included in this template</p>
-            <ul className="simple-list">
-              <li>Email signup with password validation.</li>
-              <li>Optional Google signup when Firebase env vars are present.</li>
-              <li>Automatic redirect into the dashboard after account creation.</li>
+          <div className="p-4 rounded-lg border border-border bg-card space-y-3">
+            <p className="font-semibold text-sm text-foreground">Included in this template</p>
+            <ul className="text-sm text-muted-foreground space-y-2">
+              <li>✓ Email signup with password validation</li>
+              <li>✓ Optional Google signup when Firebase env vars are present</li>
+              <li>✓ Automatic redirect into the dashboard after account creation</li>
             </ul>
           </div>
-        </aside>
+        </div>
 
-        <div className="form-card">
-          <div className="form-heading">
-            <p className="eyebrow">Signup</p>
-            <h2>Create your workspace</h2>
-            <p>Use a real email and a password with at least 8 characters.</p>
+        {/* Right Form Card */}
+        <div className="card animate-fade-in-up order-1 lg:order-2 max-w-md mx-auto w-full">
+          <div className="mb-6">
+            <p className="text-sm font-semibold uppercase tracking-widest text-accent mb-2">Signup</p>
+            <h2 className="text-2xl font-bold text-foreground mb-2">Create your workspace</h2>
+            <p className="text-muted-foreground text-sm">Use a real email and a password with at least 8 characters.</p>
           </div>
 
-          {error ? <div className="alert-error">{error}</div> : null}
+          {error && (
+            <div className="mb-6 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+              {error}
+            </div>
+          )}
 
-          <form onSubmit={handleSignup} className="form-stack">
-            <label className="field">
-              <span className="field-label">Full name</span>
+          <form onSubmit={handleSignup} className="space-y-4 mb-6">
+            <div className="form-group">
+              <label htmlFor="signup-name" className="label">
+                Full name
+              </label>
               <input
                 id="signup-name"
                 type="text"
-                className="field-input"
+                className="input"
                 placeholder="Aarav Sharma"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 required
               />
-            </label>
+            </div>
 
-            <label className="field">
-              <span className="field-label">Email</span>
+            <div className="form-group">
+              <label htmlFor="signup-email" className="label">
+                Email
+              </label>
               <input
                 id="signup-email"
                 type="email"
-                className="field-input"
+                className="input"
                 placeholder="team@startup.com"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 required
               />
-            </label>
+            </div>
 
-            <label className="field">
-              <span className="field-label">Password</span>
+            <div className="form-group">
+              <label htmlFor="signup-password" className="label">
+                Password
+              </label>
               <input
                 id="signup-password"
                 type="password"
-                className="field-input"
+                className="input"
                 placeholder="Create a strong password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required
               />
-              <span className="field-help">Minimum 8 characters.</span>
-            </label>
+              <p className="text-xs text-muted-foreground mt-1">Minimum 8 characters.</p>
+            </div>
 
-            <button id="signup-submit" type="submit" className="pill-button full-width" disabled={submitting || loading}>
+            <button
+              id="signup-submit"
+              type="submit"
+              className="btn btn-primary w-full"
+              disabled={submitting || loading}
+            >
               {submitting ? "Creating account..." : "Create account"}
             </button>
           </form>
 
-          <div className="form-divider">or</div>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-muted-foreground font-medium">or</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
 
           <button
-            className="ghost-button full-width"
+            className="btn btn-outline w-full mb-6"
             onClick={handleGoogle}
             disabled={!isFirebaseConfigured || submitting || loading}
             type="button"
@@ -147,11 +170,14 @@ export default function SignupPage() {
             {isFirebaseConfigured ? "Sign up with Google" : "Google sign-up not configured"}
           </button>
 
-          <p className="form-footnote">
-            Already registered? <Link href="/login">Log in here</Link>
+          <p className="text-sm text-center text-muted-foreground">
+            Already registered?{" "}
+            <Link href="/login" className="text-accent hover:text-accent/80 font-semibold transition-colors">
+              Log in here
+            </Link>
           </p>
         </div>
-      </section>
+      </div>
     </main>
   );
 }

@@ -50,79 +50,100 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="auth-shell shell-gradient">
-      <section className="auth-panel animate-fade-up">
-        <aside className="auth-aside">
-          <Link href="/" className="brand-lockup solo">
-            <div className="brand-mark">Ix</div>
+    <main className="min-h-screen bg-gradient-to-br from-background via-card to-background">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        {/* Left Sidebar */}
+        <div className="space-y-8 animate-fade-in-up order-2 lg:order-1">
+          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <div className="w-10 h-10 rounded-xl bg-accent text-white flex items-center justify-center font-bold">
+              Ix
+            </div>
             <div>
-              <p className="eyebrow">Iteryx</p>
-              <h1 className="brand-title">Welcome back</h1>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Iteryx</p>
+              <h1 className="text-lg font-bold">Welcome back</h1>
             </div>
           </Link>
 
-          <div className="aside-copy">
-            <h2>Log in to your workspace.</h2>
-            <p>
+          <div className="space-y-3">
+            <h2 className="text-2xl font-bold text-foreground">Log in to your workspace</h2>
+            <p className="text-muted-foreground leading-relaxed">
               Use your email and password or continue with Google if Firebase is configured for this project.
             </p>
           </div>
 
-          <div className="stack-card">
-            <p className="stack-card-title">This screen now fixes</p>
-            <ul className="simple-list">
-              <li>Credential login not updating the app session.</li>
-              <li>Redirect loops caused by client-only auth state.</li>
-              <li>Hard dependency on JWT for basic sign-in.</li>
+          <div className="p-4 rounded-lg border border-border bg-card space-y-3">
+            <p className="font-semibold text-sm text-foreground">This screen now fixes</p>
+            <ul className="text-sm text-muted-foreground space-y-2">
+              <li>✓ Credential login not updating the app session</li>
+              <li>✓ Redirect loops caused by client-only auth state</li>
+              <li>✓ Hard dependency on JWT for basic sign-in</li>
             </ul>
           </div>
-        </aside>
+        </div>
 
-        <div className="form-card">
-          <div className="form-heading">
-            <p className="eyebrow">Login</p>
-            <h2>Access your account</h2>
-            <p>Enter the same credentials you used during signup.</p>
+        {/* Right Form Card */}
+        <div className="card animate-fade-in-up order-1 lg:order-2 max-w-md mx-auto w-full">
+          <div className="mb-6">
+            <p className="text-sm font-semibold uppercase tracking-widest text-accent mb-2">Login</p>
+            <h2 className="text-2xl font-bold text-foreground mb-2">Access your account</h2>
+            <p className="text-muted-foreground text-sm">Enter the same credentials you used during signup.</p>
           </div>
 
-          {error ? <div className="alert-error">{error}</div> : null}
+          {error && (
+            <div className="mb-6 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+              {error}
+            </div>
+          )}
 
-          <form onSubmit={handleCredentials} className="form-stack">
-            <label className="field">
-              <span className="field-label">Email</span>
+          <form onSubmit={handleCredentials} className="space-y-4 mb-6">
+            <div className="form-group">
+              <label htmlFor="login-email" className="label">
+                Email
+              </label>
               <input
                 id="login-email"
                 type="email"
-                className="field-input"
+                className="input"
                 placeholder="founder@company.com"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 required
               />
-            </label>
+            </div>
 
-            <label className="field">
-              <span className="field-label">Password</span>
+            <div className="form-group">
+              <label htmlFor="login-password" className="label">
+                Password
+              </label>
               <input
                 id="login-password"
                 type="password"
-                className="field-input"
+                className="input"
                 placeholder="Enter your password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required
               />
-            </label>
+            </div>
 
-            <button id="login-submit" type="submit" className="pill-button full-width" disabled={submitting || loading}>
+            <button
+              id="login-submit"
+              type="submit"
+              className="btn btn-primary w-full"
+              disabled={submitting || loading}
+            >
               {submitting ? "Signing in..." : "Sign in"}
             </button>
           </form>
 
-          <div className="form-divider">or</div>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-muted-foreground font-medium">or</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
 
           <button
-            className="ghost-button full-width"
+            className="btn btn-outline w-full mb-6"
             onClick={handleGoogle}
             disabled={!isFirebaseConfigured || submitting || loading}
             type="button"
@@ -130,11 +151,14 @@ export default function LoginPage() {
             {isFirebaseConfigured ? "Continue with Google" : "Google sign-in not configured"}
           </button>
 
-          <p className="form-footnote">
-            Need an account? <Link href="/signup">Create one here</Link>
+          <p className="text-sm text-center text-muted-foreground">
+            Need an account?{" "}
+            <Link href="/signup" className="text-accent hover:text-accent/80 font-semibold transition-colors">
+              Create one here
+            </Link>
           </p>
         </div>
-      </section>
+      </div>
     </main>
   );
 }
