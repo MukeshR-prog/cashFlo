@@ -2,10 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { getInvoicesData, markInvoiceAsPaid } from "@/lib/db";
 import { Invoice } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AlertCircle, FileText, Send, Database, CheckCircle2, Loader2 } from "lucide-react";
+
+async function getDashboardData<T>(userId: string, type: string): Promise<T> {
+  const response = await fetch(
+    `/api/dashboard-data?userId=${encodeURIComponent(userId)}&type=${encodeURIComponent(type)}`,
+    { cache: "no-store" }
+  );
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error ?? "Failed to load dashboard data");
+  }
+
+  return payload.data as T;
+}
 
 export default function ReceivablesPage() {
   const { user } = useAuth();
@@ -17,7 +30,7 @@ export default function ReceivablesPage() {
     async function loadData() {
       if (!user || !user.id) return;
       try {
-        const data = await getInvoicesData(user.id);
+        const data = await getDashboardData<Invoice[]>(user.id, "invoices");
         setInvoices(data as Invoice[]);
       } catch (error) {
         console.error("Error loading Invoices Data:", error);
@@ -32,7 +45,21 @@ export default function ReceivablesPage() {
     if (!user || !user.id) return;
     setProcessingId(invoiceId);
     try {
-      await markInvoiceAsPaid(user.id, invoiceId);
+      const response = await fetch("/api/dashboard-data", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "markInvoicePaid",
+          userId: user.id,
+          invoiceId,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json();
+        throw new Error(payload.error ?? "Failed to update invoice");
+      }
+
       // Optimistically update the local state without a full reload
       setInvoices(prev => prev.map(inv => 
         inv.id === invoiceId ? { ...inv, status: 'paid' } : inv
@@ -45,7 +72,7 @@ export default function ReceivablesPage() {
   };
 
   if (loading) {
-     return <div className="animate-pulse space-y-6">Loading AR Ledger from Firestore...</div>;
+     return <div className="animate-pulse space-y-6">Loading AR Ledger...</div>;
   }
 
   if (invoices.length === 0) {

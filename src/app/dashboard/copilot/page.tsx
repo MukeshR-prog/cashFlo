@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { getAlertsData, getDashboardMetrics } from "@/lib/db";
 import { AnomalyAlert } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +12,20 @@ type DashboardMetrics = {
   monthlyBurn: number;
   predictedRunwayMonths: number;
 };
+
+async function getDashboardData<T>(userId: string, type: string): Promise<T> {
+  const response = await fetch(
+    `/api/dashboard-data?userId=${encodeURIComponent(userId)}&type=${encodeURIComponent(type)}`,
+    { cache: "no-store" }
+  );
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error ?? "Failed to load dashboard data");
+  }
+
+  return payload.data as T;
+}
 
 export default function CopilotPage() {
   const { user } = useAuth();
@@ -25,8 +38,8 @@ export default function CopilotPage() {
       if (!user || !user.id) return;
       try {
         const [a, m] = await Promise.all([
-          getAlertsData(user.id),
-          getDashboardMetrics(user.id)
+          getDashboardData<AnomalyAlert[]>(user.id, "alerts"),
+          getDashboardData<DashboardMetrics>(user.id, "metrics")
         ]);
         setAlerts(a as AnomalyAlert[]);
         setMetrics(m as DashboardMetrics);

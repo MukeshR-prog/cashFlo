@@ -2,11 +2,24 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { getScenarioAssumptionsData, getScenarioRunwayData } from "@/lib/db";
 import { ScenarioAssumption, ScenarioPoint } from "@/lib/mock-data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRightLeft, Calculator, Lightbulb, Target } from "lucide-react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
+
+async function getDashboardData<T>(userId: string, type: string): Promise<T> {
+  const response = await fetch(
+    `/api/dashboard-data?userId=${encodeURIComponent(userId)}&type=${encodeURIComponent(type)}`,
+    { cache: "no-store" }
+  );
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error ?? "Failed to load dashboard data");
+  }
+
+  return payload.data as T;
+}
 
 export default function PlanningPage() {
   const { user } = useAuth();
@@ -21,8 +34,8 @@ export default function PlanningPage() {
       if (!user?.id) return;
       try {
         const [assumptionRows, runwayRows] = await Promise.all([
-          getScenarioAssumptionsData(user.id),
-          getScenarioRunwayData(user.id),
+          getDashboardData<ScenarioAssumption[]>(user.id, "scenarioAssumptions"),
+          getDashboardData<ScenarioPoint[]>(user.id, "scenarioRunway"),
         ]);
         setAssumptions(assumptionRows as ScenarioAssumption[]);
         setRunway(runwayRows as ScenarioPoint[]);

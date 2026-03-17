@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { getCashFlowData, getDashboardMetrics } from "@/lib/db";
 import { CashFlowDay } from "@/lib/mock-data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, CalendarClock, TrendingDown, Wallet } from "lucide-react";
@@ -11,6 +10,20 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 type DashboardMetrics = {
   totalCash: number;
 };
+
+async function getDashboardData<T>(userId: string, type: string): Promise<T> {
+  const response = await fetch(
+    `/api/dashboard-data?userId=${encodeURIComponent(userId)}&type=${encodeURIComponent(type)}`,
+    { cache: "no-store" }
+  );
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error ?? "Failed to load dashboard data");
+  }
+
+  return payload.data as T;
+}
 
 export default function CashflowPage() {
   const { user } = useAuth();
@@ -22,7 +35,10 @@ export default function CashflowPage() {
     async function loadData() {
       if (!user?.id) return;
       try {
-        const [cashRows, m] = await Promise.all([getCashFlowData(user.id), getDashboardMetrics(user.id)]);
+        const [cashRows, m] = await Promise.all([
+          getDashboardData<CashFlowDay[]>(user.id, "cashflow"),
+          getDashboardData<DashboardMetrics>(user.id, "metrics"),
+        ]);
         setRows(cashRows as CashFlowDay[]);
         setMetrics(m as DashboardMetrics);
       } finally {
