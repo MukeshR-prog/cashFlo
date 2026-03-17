@@ -1,8 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { getSessionUser } from "@/app/api/_lib/auth/session";
 import connectDB from "@/app/api/_lib/db/mongodb";
 import User from "@/app/api/_lib/models/User";
 import { SESSION_COOKIE_NAME } from "@/app/api/_lib/auth/constants";
+
+const studentProfileSchema = z.object({
+  school: z.string().min(1),
+  course: z.string().min(1),
+  graduationYear: z.union([z.number().int().min(2000).max(2100), z.null()]).optional(),
+});
+
+const freelancerProfileSchema = z.object({
+  skills: z.array(z.string().min(1)).min(1),
+  hourlyRate: z.union([z.number().nonnegative(), z.null()]).optional(),
+  portfolioUrl: z.union([z.string().url(), z.null()]).optional(),
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,6 +31,20 @@ export async function POST(req: NextRequest) {
 
     if (!role || (role !== "student" && role !== "freelancer")) {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+    }
+
+    if (role === "student") {
+      const parsed = studentProfileSchema.safeParse(profile ?? {});
+      if (!parsed.success) {
+        return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid student profile" }, { status: 400 });
+      }
+    }
+
+    if (role === "freelancer") {
+      const parsed = freelancerProfileSchema.safeParse(profile ?? {});
+      if (!parsed.success) {
+        return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid freelancer profile" }, { status: 400 });
+      }
     }
 
     await connectDB();

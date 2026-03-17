@@ -94,6 +94,7 @@ export async function getSessionUser(token?: string | null) {
     provider: user.provider,
     role: (user as any).role ?? null,
     onboardingCompleted: (user as any).onboardingCompleted ?? false,
+    loginCount: (user as any).loginCount ?? 0,
     profile: (user as any).profile ?? null,
   };
 }

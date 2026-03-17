@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import { TrendingUp, ArrowRight, Eye, EyeOff, CheckCircle } from "lucide-react";
@@ -24,8 +24,6 @@ export default function LoginPage() {
 function LoginContent() {
   const { user, signInWithGoogle, loginWithCredentials, loading } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") ?? "/dashboard";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,17 +31,23 @@ function LoginContent() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // If the user is already logged in (e.g., navigated back to /login),
+  // send them to the appropriate destination based on their own onboarding state.
   useEffect(() => {
-    if (!loading && user) router.replace(redirect);
-  }, [loading, redirect, router, user]);
+    if (!loading && user) {
+      router.replace(
+        user.onboardingCompleted === false ? "/onboarding" : "/dashboard"
+      );
+    }
+  }, [loading, router, user]);
 
   const handleCredentials = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSubmitting(true);
     try {
+      // AuthContext.loginWithCredentials handles the routing decision internally
       await loginWithCredentials(email, password);
-      router.push(redirect);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {

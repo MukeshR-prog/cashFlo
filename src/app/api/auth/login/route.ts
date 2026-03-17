@@ -21,7 +21,12 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    const user = await User.findOne({ email: normalizedEmail });
+    const user = await User.findOneAndUpdate(
+      { email: normalizedEmail },
+      { $inc: { loginCount: 1 } },
+      { new: true }
+    );
+
     if (!user || !user.password) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
@@ -31,6 +36,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
+    const onboardingCompleted = (user as any).onboardingCompleted ?? false;
+    const loginCount: number = (user as any).loginCount ?? 1;
+
     const response = NextResponse.json({
       message: "Login successful",
       user: {
@@ -39,6 +47,10 @@ export async function POST(req: NextRequest) {
         email: user.email,
         image: user.image ?? null,
         provider: "credentials",
+        onboardingCompleted,
+        isNewUser: false,
+        loginCount,
+        role: (user as any).role ?? null,
       },
     });
 
@@ -57,3 +69,4 @@ export async function DELETE(req: NextRequest) {
   const response = NextResponse.json({ message: "Logged out" });
   return clearSessionCookie(response);
 }
+

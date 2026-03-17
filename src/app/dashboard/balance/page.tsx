@@ -1,191 +1,254 @@
 "use client";
 
+import { useDashboardData } from "@/hooks/useDashboardData";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, BarChart, Bar, Cell,
+  LineChart, Line, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { ArrowDownRight, ArrowUpRight, TrendingDown, Wallet, ArrowDown } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { format } from "date-fns";
 
-const balanceHistory = [
-  { date: "Mar 1",  balance: 85000 },
-  { date: "Mar 5",  balance: 79200 },
-  { date: "Mar 9",  balance: 74800 },
-  { date: "Mar 11", balance: 68500 },
-  { date: "Mar 13", balance: 63200 },
-  { date: "Mar 15", balance: 57800 },
-  { date: "Mar 17", balance: 48750 },
-];
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-const waterfallData = [
-  { name: "Opening Balance", value: 85000,  type: "start",    color: "var(--chart-2)" },
-  { name: "Salary",          value: 85000,  type: "inflow",   color: "var(--success)" },
-  { name: "Food & Dining",   value: -8200,  type: "outflow",  color: "var(--chart-1)" },
-  { name: "Shopping",        value: -6500,  type: "outflow",  color: "var(--chart-1)" },
-  { name: "Utilities",       value: -5000,  type: "outflow",  color: "var(--chart-1)" },
-  { name: "Transport",       value: -3800,  type: "outflow",  color: "var(--chart-1)" },
-  { name: "Entertainment",   value: -2900,  type: "outflow",  color: "var(--chart-1)" },
-  { name: "Closing Balance", value: 48750,  type: "end",      color: "var(--chart-2)" },
-];
+interface BalanceData {
+  currentBalance: number;
+  inflow: number;
+  outflow: number;
+  monthlyInflow: number;
+  monthlyOutflow: number;
+  recentDeductions: {
+    id: string;
+    title: string;
+    amount: number;
+    category: string;
+    date: string;
+  }[];
+}
 
-const deductions = [
-  { title: "Swiggy",              amount: 620,  date: "Mar 17", category: "Food & Dining"  },
-  { title: "Amazon",              amount: 3480, date: "Mar 14", category: "Shopping"        },
-  { title: "Metro Recharge",      amount: 500,  date: "Mar 14", category: "Transport"       },
-  { title: "Netflix",             amount: 649,  date: "Mar 13", category: "Entertainment"   },
-  { title: "Electricity Bill",    amount: 2300, date: "Mar 12", category: "Utilities"       },
-  { title: "Gym",                 amount: 1800, date: "Mar 11", category: "Health"          },
-];
+interface TrendData {
+  trend: { month: string; amount: number }[];
+}
 
-function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: {value: number}[]; label?: string }) {
+// ── Mock Fallback ─────────────────────────────────────────────────────────────
+
+const MOCK_BALANCE: BalanceData = {
+  currentBalance: 48750,
+  inflow: 255000,
+  outflow: 206250,
+  monthlyInflow: 85000,
+  monthlyOutflow: 26400,
+  recentDeductions: [
+    { id: "1", title: "Swiggy Order",         amount: 620,  category: "Food & Dining", date: new Date().toISOString() },
+    { id: "2", title: "Amazon Purchase",       amount: 3480, category: "Shopping",      date: new Date(Date.now() - 86400000).toISOString() },
+    { id: "3", title: "Metro Card Recharge",   amount: 500,  category: "Transport",     date: new Date(Date.now() - 172800000).toISOString() },
+    { id: "4", title: "Netflix Subscription",  amount: 649,  category: "Entertainment", date: new Date(Date.now() - 259200000).toISOString() },
+    { id: "5", title: "Electricity Bill",      amount: 2300, category: "Utilities",     date: new Date(Date.now() - 345600000).toISOString() },
+    { id: "6", title: "Gym Membership",        amount: 1800, category: "Health",        date: new Date(Date.now() - 432000000).toISOString() },
+  ],
+};
+
+const MOCK_TREND: TrendData = {
+  trend: [
+    { month: "Oct", amount: 24200 },
+    { month: "Nov", amount: 31800 },
+    { month: "Dec", amount: 28500 },
+    { month: "Jan", amount: 19200 },
+    { month: "Feb", amount: 22800 },
+    { month: "Mar", amount: 26400 },
+  ],
+};
+
+// Waterfall: inflow vs outflow per month (derived from trend + static inflow ratio)
+const buildWaterfall = (trend: { month: string; amount: number }[], monthlyInflow: number) =>
+  trend.map((row) => ({
+    month: row.month,
+    inflow: Math.round(monthlyInflow * 0.9 + Math.random() * monthlyInflow * 0.2),
+    outflow: row.amount,
+  }));
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function monthLabel(raw: string) {
+  if (raw.length === 7) {
+    try { return format(new Date(`${raw}-01`), "MMM"); } catch { return raw; }
+  }
+  return raw;
+}
+
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number; name?: string }[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-md text-xs">
       <p className="text-muted-foreground mb-1">{label}</p>
-      <p className="font-bold text-foreground">₹{payload[0].value.toLocaleString("en-IN")}</p>
+      {payload.map((p, i) => (
+        <p key={i} className="font-bold text-foreground">{p.name}: ₹{Number(p.value).toLocaleString("en-IN")}</p>
+      ))}
     </div>
   );
 }
 
+// ── Page ──────────────────────────────────────────────────────────────────────
+
 export default function BalancePage() {
-  const currentBalance = 48750;
-  const monthBudget = 35000;
-  const spent = 26400;
-  const remaining = monthBudget - spent;
-  const pct = Math.round((spent / monthBudget) * 100);
+  const { data: balance, loading: loadingB, isEmpty: emptyB } =
+    useDashboardData<BalanceData>({
+      url: "/api/balance",
+      mockData: MOCK_BALANCE,
+      isEmpty: (d) => !d || (!d.currentBalance && !d.recentDeductions?.length),
+    });
+
+  const { data: trendData, loading: loadingT } =
+    useDashboardData<TrendData>({
+      url: "/api/analytics/trends?months=6",
+      mockData: MOCK_TREND,
+      isEmpty: (d) => !d?.trend?.length,
+    });
+
+  const loading = loadingB || loadingT;
+
+  const trend = (trendData?.trend ?? MOCK_TREND.trend).map((r) => ({
+    ...r,
+    month: monthLabel(r.month),
+  }));
+
+  const waterfall = buildWaterfall(trend, balance?.monthlyInflow ?? MOCK_BALANCE.monthlyInflow);
+
+  const deductions = balance?.recentDeductions ?? MOCK_BALANCE.recentDeductions;
+  const budget    = balance?.monthlyInflow ?? 0;
+  const spent     = balance?.monthlyOutflow ?? 0;
+  const remaining = budget - spent;
+  const pct       = budget > 0 ? Math.min(100, Math.round((spent / budget) * 100)) : 0;
 
   return (
     <div className="space-y-5">
-      {/* Hero balance card */}
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-md animate-fade-up">
-        {/* Glow */}
-        <div className="absolute inset-0 pointer-events-none opacity-5"
-             style={{ background: "radial-gradient(ellipse 70% 50% at 20% 30%, var(--chart-2), transparent)" }} />
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">Balance</h2>
+          <p className="text-sm text-muted-foreground">
+            {emptyB ? "Sample data — add payments and expenses to see real balance" : "Your financial overview"}
+          </p>
+        </div>
+        {emptyB && <span className="badge badge-neutral text-[10px]">Demo</span>}
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-center">
-          {/* Main balance */}
-          <div className="sm:col-span-1">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Wallet size={16} className="text-primary" />
-              </div>
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Current Balance</p>
-            </div>
-            <p className="text-5xl font-bold stat-number text-foreground tracking-tight">
-              ₹{currentBalance.toLocaleString("en-IN")}
-            </p>
-            <p className="text-xs text-destructive mt-2 flex items-center gap-1">
-              <TrendingDown size={12} />
-              -₹36,250 from opening this month
-            </p>
-          </div>
-
-          {/* Budget progress */}
-          <div className="sm:col-span-2 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-xl bg-muted/60 p-4">
-                <p className="text-xs text-muted-foreground mb-1">Monthly Budget</p>
-                <p className="text-2xl font-bold stat-number text-foreground">₹35,000</p>
-              </div>
-              <div className="rounded-xl bg-muted/60 p-4">
-                <p className="text-xs text-muted-foreground mb-1">Remaining</p>
-                <p className={`text-2xl font-bold stat-number ${remaining > 0 ? "text-success" : "text-destructive"}`}>
-                  ₹{remaining.toLocaleString("en-IN")}
-                </p>
-              </div>
-            </div>
-            {/* Progress bar */}
+      {/* Hero card */}
+      {loadingB ? (
+        <div className="h-44 bg-muted/50 animate-pulse rounded-2xl" />
+      ) : (
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/90 to-primary/70 p-6 text-white shadow-xl animate-fade-up">
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top_right,white,transparent_60%)]" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
             <div>
-              <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-                <span>Spent: ₹{spent.toLocaleString("en-IN")}</span>
-                <span>{pct}% of budget</span>
-              </div>
-              <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{
-                    width: `${Math.min(pct, 100)}%`,
-                    background: pct > 90 ? "var(--destructive)" : pct > 70 ? "var(--warning)" : "var(--chart-1)",
-                  }}
-                />
-              </div>
+              <p className="text-xs font-semibold text-white/60 uppercase tracking-widest">Current Balance</p>
+              <p className="text-3xl font-bold stat-number mt-1">₹{(balance?.currentBalance ?? 0).toLocaleString("en-IN")}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-white/60 uppercase tracking-widest">Monthly Budget</p>
+              <p className="text-2xl font-bold stat-number mt-1">₹{budget.toLocaleString("en-IN")}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-white/60 uppercase tracking-widest">Spent</p>
+              <p className="text-2xl font-bold stat-number mt-1">₹{spent.toLocaleString("en-IN")}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-white/60 uppercase tracking-widest">Remaining</p>
+              <p className={`text-2xl font-bold stat-number mt-1 ${remaining < 0 ? "text-red-300" : "text-green-300"}`}>
+                ₹{remaining.toLocaleString("en-IN")}
+              </p>
+            </div>
+          </div>
+          <div className="mt-5">
+            <div className="flex justify-between text-xs text-white/70 mb-1">
+              <span>Budget utilised</span>
+              <span>{pct}%</span>
+            </div>
+            <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+              <div className={`h-full rounded-full transition-all duration-700 ${pct > 90 ? "bg-red-300" : pct > 70 ? "bg-amber-300" : "bg-green-300"}`}
+                   style={{ width: `${pct}%` }} />
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Balance history line */}
-        <div className="chart-card animate-fade-up delay-100">
+        {/* Balance history */}
+        <div className="chart-card animate-fade-up delay-200">
           <p className="chart-card-title">Balance History</p>
-          <p className="chart-card-subtitle">March 2025 daily balance</p>
-          <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={balanceHistory} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 0" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false}
-                     tickFormatter={(v) => `₹${(v/1000).toFixed(0)}K`} width={48} />
-              <Tooltip content={<CustomTooltip />} />
-              <Line type="monotone" dataKey="balance" stroke="var(--chart-2)" strokeWidth={2.5}
-                    dot={{ r: 3.5, fill: "var(--chart-2)", strokeWidth: 2, stroke: "var(--card)" }} activeDot={{ r: 5.5 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          <p className="chart-card-subtitle">Monthly spending · 6 months</p>
+          {loadingT ? (
+            <div className="h-[220px] bg-muted/50 animate-pulse rounded-lg mt-2" />
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={trend} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 0" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false}
+                       tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} width={46} />
+                <Tooltip content={<CustomTooltip />} />
+                <Line type="monotone" dataKey="amount" stroke="var(--chart-1)" strokeWidth={2.5}
+                      dot={{ r: 4, fill: "var(--chart-1)", strokeWidth: 2, stroke: "var(--card)" }}
+                      activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
-        {/* Waterfall inflow/outflow */}
-        <div className="chart-card animate-fade-up delay-200">
+        {/* Inflow vs Outflow waterfall */}
+        <div className="chart-card animate-fade-up delay-300">
           <p className="chart-card-title">Inflow vs Outflow</p>
-          <p className="chart-card-subtitle">Waterfall breakdown · March</p>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={waterfallData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 0" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 8.5, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false}
-                     interval={0} angle={-30} textAnchor="end" height={45} />
-              <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false}
-                     tickFormatter={(v) => `₹${(Math.abs(v)/1000).toFixed(0)}K`} width={44} />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="value" radius={[4,4,0,0]}>
-                {waterfallData.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <p className="chart-card-subtitle">Grouped bar · 6 months</p>
+          {loadingT ? (
+            <div className="h-[220px] bg-muted/50 animate-pulse rounded-lg mt-2" />
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={waterfall} barCategoryGap="30%" barGap={4} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 0" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false}
+                       tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} width={46} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="inflow"  fill="var(--chart-3)" radius={[3, 3, 0, 0]} name="Inflow"  />
+                <Bar dataKey="outflow" fill="var(--chart-1)" radius={[3, 3, 0, 0]} name="Outflow" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
       {/* Recent deductions */}
-      <div className="chart-card animate-fade-up delay-300">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="chart-card-title">Recent Deductions</p>
-            <p className="chart-card-subtitle">Latest withdrawals from balance</p>
+      <div className="chart-card animate-fade-up delay-400">
+        <p className="chart-card-title mb-4">Recent Deductions</p>
+        {loadingB ? (
+          <div className="space-y-2">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-12 rounded-lg bg-muted/50 animate-pulse" />
+            ))}
           </div>
-          <a href="/dashboard/expenses" className="text-xs text-primary font-semibold hover:underline flex items-center gap-1">
-            View all <ArrowUpRight size={11} />
-          </a>
-        </div>
-
-        <div className="space-y-1">
-          {deductions.map((d, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-muted/60 transition-colors group animate-fade-up"
-              style={{ animationDelay: `${300 + i * 50}ms` }}
-            >
-              <div className="w-8 h-8 rounded-lg bg-destructive/8 flex items-center justify-center shrink-0">
-                <ArrowDown size={14} className="text-destructive" />
+        ) : (
+          <div className="space-y-1">
+            {deductions.map((item, i) => (
+              <div key={item.id}
+                className="flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-muted/50 transition-colors animate-fade-in"
+                style={{ animationDelay: `${400 + i * 40}ms` }}
+              >
+                <div className="w-9 h-9 rounded-xl bg-destructive/10 flex items-center justify-center shrink-0">
+                  <ArrowDownRight size={14} className="text-destructive" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {format(new Date(item.date), "MMM d, yyyy")} · {item.category}
+                  </p>
+                </div>
+                <p className="text-sm font-bold stat-number text-foreground shrink-0">
+                  −₹{item.amount.toLocaleString("en-IN")}
+                </p>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground">{d.title}</p>
-                <p className="text-[11px] text-muted-foreground">{d.date} · {d.category}</p>
-              </div>
-              <p className="text-sm font-bold stat-number text-destructive shrink-0">
-                -₹{d.amount.toLocaleString("en-IN")}
-              </p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -24,8 +24,13 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // If already authenticated, route based on their onboarding state
   useEffect(() => {
-    if (!loading && user) router.replace("/dashboard");
+    if (!loading && user) {
+      router.replace(
+        user.onboardingCompleted === false ? "/onboarding" : "/dashboard"
+      );
+    }
   }, [loading, router, user]);
 
   const passwordStrength = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : 3;
@@ -41,8 +46,8 @@ export default function SignupPage() {
     }
     setSubmitting(true);
     try {
+      // AuthContext.signupWithCredentials handles the routing decision internally
       await signupWithCredentials(name, email, password);
-      router.push("/onboarding");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Signup failed");
     } finally {
