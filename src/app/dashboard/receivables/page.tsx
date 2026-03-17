@@ -163,8 +163,8 @@ export default function ReceivablesPage() {
               <BarChart data={agingData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="bucket" tickLine={false} axisLine={false} />
-                <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => `$${Math.round(v / 1000)}k`} />
-                <ChartTooltip content={<ChartTooltipContent valueFormatter={(v) => `$${v.toLocaleString()}`} />} />
+                <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => `₹${Math.round(v / 1000)}k`} />
+                <ChartTooltip content={<ChartTooltipContent valueFormatter={(v) => `₹${v.toLocaleString()}`} />} />
                 <Bar dataKey="amount" fill="var(--chart-1)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

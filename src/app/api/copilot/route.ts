@@ -14,6 +14,16 @@ type ChatMessage = {
   content: string;
 };
 
+const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+
+function formatINR(value: number) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
 function buildContextSummary(data: {
   metrics: Awaited<ReturnType<typeof getDashboardMetrics>>;
   alerts: Awaited<ReturnType<typeof getAlertsData>>;
@@ -22,14 +32,17 @@ function buildContextSummary(data: {
   capTable: Awaited<ReturnType<typeof getCapTableData>>;
   compliance: Awaited<ReturnType<typeof getComplianceAlertsData>>;
 }) {
-  const invoices = (data.invoices as Array<{ status?: string; amount?: number }>) ?? [];
+  const invoices =
+    (data.invoices as Array<{ status?: string; amount?: number; client?: string; dueDate?: string }>) ?? [];
   const cashflow = (data.cashflow as Array<{ inflow?: number; outflow?: number }>) ?? [];
-  const capTable = (data.capTable as Array<Record<string, unknown>>) ?? [];
+  const capTable = (data.capTable as Array<{ holder?: string; ownershipPct?: number }>) ?? [];
   const compliance = (data.compliance as Array<Record<string, unknown>>) ?? [];
-  const alerts = (data.alerts as Array<Record<string, unknown>>) ?? [];
+  const alerts = (data.alerts as Array<{ severity?: string; title?: string; description?: string }>) ?? [];
 
   const overdueInvoices = invoices.filter((invoice) => invoice.status === "overdue");
   const overdueAmount = overdueInvoices.reduce((sum, invoice) => sum + (invoice.amount ?? 0), 0);
+  const pendingInvoices = invoices.filter((invoice) => invoice.status === "pending");
+  const pendingAmount = pendingInvoices.reduce((sum, invoice) => sum + (invoice.amount ?? 0), 0);
   const totalOutflow = cashflow.reduce((sum, point) => sum + (point.outflow ?? 0), 0);
   const totalInflow = cashflow.reduce((sum, point) => sum + (point.inflow ?? 0), 0);
 
@@ -39,6 +52,15 @@ function buildContextSummary(data: {
     overdueSummary: {
       count: overdueInvoices.length,
       amount: overdueAmount,
+      top: overdueInvoices.slice(0, 3).map((invoice) => ({
+        client: invoice.client,
+        dueDate: invoice.dueDate,
+        amount: invoice.amount,
+      })),
+    },
+    pendingSummary: {
+      count: pendingInvoices.length,
+      amount: pendingAmount,
     },
     cashflowSummary: {
       periods: cashflow.length,
@@ -46,7 +68,10 @@ function buildContextSummary(data: {
       outflow: totalOutflow,
       net: totalInflow - totalOutflow,
     },
-    capTableTop: capTable.slice(0, 5),
+    capTableTop: capTable.slice(0, 5).map((row) => ({
+      holder: row.holder,
+      ownershipPct: row.ownershipPct,
+    })),
     complianceTop: compliance.slice(0, 5),
   };
 }
@@ -98,12 +123,21 @@ export async function POST(request: NextRequest) {
     }));
 
     const systemPrompt = [
-      "You are a startup financial decision support assistant.",
-      "Always answer in plain, founder-friendly language.",
-      "Use only the provided financial context and do not invent numbers.",
-      "If the user asks for a recommendation, include: what happened, why it matters, and immediate next step.",
-      "Keep responses concise, actionable, and data-driven.",
-      `Context JSON: ${JSON.stringify(contextSummary)}`,
+      "You are FundSight, an India-focused CFO copilot for startup founders.",
+      "Use ONLY the provided dashboard context. Do not invent any numbers.",
+      "Use INR and Indian financial language where relevant (runway, burn, AR, GST/TDS compliance).",
+      "Keep answers concise and decision-oriented.",
+      "When advice is requested, structure as: What happened, Why it matters, Next 3 actions.",
+      "If data is missing, say what is missing and what to check in the dashboard.",
+      `Context JSON: ${JSON.stringify({
+        ...contextSummary,
+        formatted: {
+          totalCash: formatINR((contextSummary.metrics as { totalCash?: number })?.totalCash ?? 0),
+          monthlyBurn: formatINR((contextSummary.metrics as { monthlyBurn?: number })?.monthlyBurn ?? 0),
+          overdueAR: formatINR(contextSummary.overdueSummary.amount),
+          pendingAR: formatINR(contextSummary.pendingSummary.amount),
+        },
+      })}`,
     ].join(" ");
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -113,7 +147,7 @@ export async function POST(request: NextRequest) {
         Authorization: `Bearer ${groqKey}`,
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: GROQ_MODEL,
         temperature: 0.2,
         max_tokens: 900,
         messages: [

@@ -26,6 +26,7 @@ import {
 
 import { useAuth } from "@/context/AuthContext";
 import { CashFlowDay, Invoice, AnomalyAlert } from "@/lib/mock-data";
+import { formatINR, formatINRCompact } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,7 @@ const pieColors = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)"];
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const userKey = user?.id ?? user?.email ?? null;
 
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [cashflow, setCashflow] = useState<CashFlowDay[]>([]);
@@ -76,25 +78,31 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function loadData() {
-      if (!user?.id) return;
+      if (!userKey) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const [m, c, i, a] = await Promise.all([
-          getDashboardData<DashboardMetrics>(user.id, "metrics"),
-          getDashboardData<CashFlowDay[]>(user.id, "cashflow"),
-          getDashboardData<Invoice[]>(user.id, "invoices"),
-          getDashboardData<AnomalyAlert[]>(user.id, "alerts"),
+          getDashboardData<DashboardMetrics>(userKey, "metrics"),
+          getDashboardData<CashFlowDay[]>(userKey, "cashflow"),
+          getDashboardData<Invoice[]>(userKey, "invoices"),
+          getDashboardData<AnomalyAlert[]>(userKey, "alerts"),
         ]);
         setMetrics(m);
         setCashflow(c);
         setInvoices(i);
         setAlerts(a);
+      } catch (error) {
+        console.error("Dashboard data load failed", error);
       } finally {
         setIsLoading(false);
       }
     }
 
     void loadData();
-  }, [user]);
+  }, [userKey]);
 
   const derived = useMemo(() => {
     const inflowTotal = cashflow.reduce((sum, row) => sum + row.inflow, 0);
@@ -168,14 +176,14 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           title="Cash Balance"
-          value={`$${metrics.totalCash.toLocaleString()}`}
+          value={formatINR(metrics.totalCash)}
           detail="Live treasury snapshot"
           icon={CircleDollarSign}
           trend="+4.2% this month"
         />
         <KpiCard
           title="Monthly Burn"
-          value={`$${metrics.monthlyBurn.toLocaleString()}`}
+          value={formatINR(metrics.monthlyBurn)}
           detail="Operating spend pace"
           icon={Flame}
           trend="-2.1% vs last month"
@@ -221,8 +229,8 @@ export default function DashboardPage() {
                   <BarChart data={cashflow}>
                     <CartesianGrid vertical={false} strokeDasharray="3 3" />
                     <XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={11} />
-                    <YAxis tickLine={false} axisLine={false} fontSize={11} tickFormatter={(v) => `$${Math.round(v / 1000)}k`} />
-                    <ChartTooltip content={<ChartTooltipContent valueFormatter={(v) => `$${v.toLocaleString()}`} />} />
+                    <YAxis tickLine={false} axisLine={false} fontSize={11} tickFormatter={(v) => formatINRCompact(Number(v))} />
+                    <ChartTooltip content={<ChartTooltipContent valueFormatter={(v) => formatINR(Number(v))} />} />
                     <Bar dataKey="inflow" fill="var(--chart-2)" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="outflow" fill="var(--chart-4)" radius={[4, 4, 0, 0]} />
                   </BarChart>
@@ -246,7 +254,7 @@ export default function DashboardPage() {
                           />
                         ))}
                       </Pie>
-                      <ChartTooltip content={<ChartTooltipContent valueFormatter={(v) => `$${v.toLocaleString()}`} />} />
+                      <ChartTooltip content={<ChartTooltipContent valueFormatter={(v) => formatINR(Number(v))} />} />
                     </PieChart>
                   </ChartContainer>
                   <div className="space-y-2">
@@ -254,7 +262,7 @@ export default function DashboardPage() {
                       <div key={row.label} className="rounded-lg border border-border bg-muted/35 p-3">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-medium">{row.label}</p>
-                          <p className="text-sm font-semibold">${row.value.toLocaleString()}</p>
+                          <p className="text-sm font-semibold">{formatINR(row.value)}</p>
                         </div>
                         <p className="mt-1 text-xs text-muted-foreground">Receivables status bucket</p>
                       </div>
@@ -307,8 +315,8 @@ export default function DashboardPage() {
               <AreaChart data={cashflow}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={11} />
-                <YAxis tickLine={false} axisLine={false} fontSize={11} tickFormatter={(v) => `$${Math.round(v / 1000)}k`} />
-                <ChartTooltip content={<ChartTooltipContent valueFormatter={(v) => `$${v.toLocaleString()}`} />} />
+                <YAxis tickLine={false} axisLine={false} fontSize={11} tickFormatter={(v) => formatINRCompact(Number(v))} />
+                <ChartTooltip content={<ChartTooltipContent valueFormatter={(v) => formatINR(Number(v))} />} />
                 <Area type="monotone" dataKey="endingBalance" fill="var(--chart-1)" fillOpacity={0.25} stroke="var(--chart-1)" strokeWidth={2} />
               </AreaChart>
             </ChartContainer>
