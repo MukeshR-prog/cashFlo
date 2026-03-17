@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { applySessionCookie, createSessionForUser } from "@/lib/auth";
-import connectDB from "@/lib/mongodb";
-import User from "@/models/User";
+import { applySessionCookie, createSessionForUser } from "@/app/api/_lib/auth/session";
+import connectDB from "@/app/api/_lib/db/mongodb";
+import User from "@/app/api/_lib/models/User";
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,6 +31,8 @@ export async function POST(req: NextRequest) {
       email: normalizedEmail,
       password: hashed,
       provider: "credentials",
+      onboardingCompleted: false,
+      role: null,
     });
 
     const { sessionToken, sessionExpiresAt } = await createSessionForUser(user.id);
@@ -43,6 +45,10 @@ export async function POST(req: NextRequest) {
           email: user.email,
           image: user.image ?? null,
           provider: "credentials",
+          onboardingCompleted: false,
+          isNewUser: true,
+          loginCount: 0,
+          role: user.role ?? null,
         },
       },
       { status: 201 }

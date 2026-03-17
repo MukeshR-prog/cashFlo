@@ -9,6 +9,10 @@ export interface IUser extends Document {
   providerId?: string;     // Google UID
   sessionTokenHash?: string;
   sessionExpiresAt?: Date;
+  role?: "student" | "freelancer" | null;
+  onboardingCompleted?: boolean;
+  loginCount?: number;
+  profile?: any;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,6 +27,10 @@ const UserSchema = new Schema<IUser>(
     providerId: { type: String },
     sessionTokenHash: { type: String },
     sessionExpiresAt: { type: Date },
+    role: { type: String, enum: ["student", "freelancer"], default: null },
+    onboardingCompleted: { type: Boolean, default: false },
+    loginCount: { type: Number, default: 0 },
+    profile: { type: Schema.Types.Mixed },
   },
   { timestamps: true }
 );

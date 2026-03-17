@@ -1,145 +1,297 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import { KpiCard } from "@/components/ui/KpiCard";
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line,
+} from "recharts";
+import { Wallet, CreditCard, Receipt, ShoppingBag, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { format } from "date-fns";
 
-const priorities = [
-  { title: "Finalize onboarding copy", owner: "Design", state: "Today" },
-  { title: "Review auth env setup", owner: "Engineering", state: "High impact" },
-  { title: "Plan sprint demo", owner: "Product", state: "Tomorrow" },
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface Transaction {
+  id: string;
+  title: string;
+  amount: number;
+  date: string;
+  type: "income" | "expense";
+  category?: string;
+}
+
+interface DashboardSummary {
+  cashInHand: number;
+  monthlyExpenses: number;
+  totalExpenses: number;
+  monthlyIncome: number;
+  recentTransactions: Transaction[];
+}
+
+interface CategoryItem { name: string; value: number }
+interface CategoryData  { categories: CategoryItem[] }
+
+// ── Mock Fallback Data ─────────────────────────────────────────────────────────
+
+const MOCK_SUMMARY: DashboardSummary = {
+  cashInHand: 48750,
+  monthlyExpenses: 26400,
+  totalExpenses: 47,
+  monthlyIncome: 85000,
+  recentTransactions: [
+    { id: "1", title: "Swiggy Order",      amount: 620,   date: new Date().toISOString(), type: "expense", category: "Food & Dining"  },
+    { id: "2", title: "Salary Credit",     amount: 85000, date: new Date().toISOString(), type: "income",  category: "Income"         },
+    { id: "3", title: "Amazon Shopping",   amount: 3480,  date: new Date().toISOString(), type: "expense", category: "Shopping"       },
+    { id: "4", title: "Metro Recharge",    amount: 500,   date: new Date().toISOString(), type: "expense", category: "Transport"      },
+    { id: "5", title: "Netflix",           amount: 649,   date: new Date().toISOString(), type: "expense", category: "Entertainment"  },
+    { id: "6", title: "Electricity Bill",  amount: 2300,  date: new Date().toISOString(), type: "expense", category: "Utilities"      },
+    { id: "7", title: "Gym Membership",    amount: 1800,  date: new Date().toISOString(), type: "expense", category: "Health"         },
+  ],
+};
+
+const MOCK_CATEGORIES: CategoryData = {
+  categories: [
+    { name: "Food & Dining",  value: 8200 },
+    { name: "Shopping",       value: 6500 },
+    { name: "Transport",      value: 3800 },
+    { name: "Entertainment",  value: 2900 },
+    { name: "Utilities",      value: 5000 },
+  ],
+};
+
+const MOCK_TREND = [
+  { month: "Oct", amount: 24200 },
+  { month: "Nov", amount: 31800 },
+  { month: "Dec", amount: 28500 },
+  { month: "Jan", amount: 19200 },
+  { month: "Feb", amount: 22800 },
+  { month: "Mar", amount: 26400 },
 ];
 
-const metrics = [
-  { label: "Milestones", value: "08", detail: "3 due this week" },
-  { label: "Open tasks", value: "21", detail: "7 awaiting review" },
-  { label: "Team members", value: "06", detail: "2 external collaborators" },
-  { label: "Release health", value: "92%", detail: "No blockers reported" },
-];
+const CHART_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
 
-const activity = [
-  "Auth session flow updated to remove JWT cookies.",
-  "Landing and auth pages replaced with cleaner templates.",
-  "Dashboard now reads the same session state as the API.",
-  "Firebase configuration moved out of source code into env vars.",
-];
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function formatCurrency(n: number) {
+  const abs = Math.abs(n);
+  if (abs >= 100000) return `₹${(abs / 100000).toFixed(1)}L`;
+  if (abs >= 1000)   return `₹${(abs / 1000).toFixed(1)}K`;
+  return `₹${abs.toLocaleString("en-IN")}`;
+}
+
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-md">
+      <p className="text-xs text-muted-foreground mb-1">{label}</p>
+      <p className="text-sm font-bold text-foreground">₹{payload[0].value.toLocaleString("en-IN")}</p>
+    </div>
+  );
+}
+
+function SkeletonCard() {
+  return <div className="kpi-card animate-pulse bg-muted/60 h-32 rounded-xl" />;
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const { user, loading, logout } = useAuth();
-  const router = useRouter();
+  const { data: summary, loading: loadingS, isEmpty: emptyS } =
+    useDashboardData<DashboardSummary>({
+      url: "/api/dashboard/summary",
+      mockData: MOCK_SUMMARY,
+      isEmpty: (d) => !d || (!d.cashInHand && !d.monthlyExpenses && !d.recentTransactions?.length),
+    });
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.replace("/login?redirect=/dashboard");
-    }
-  }, [user, loading, router]);
+  const { data: catData, loading: loadingC } =
+    useDashboardData<CategoryData>({
+      url: "/api/analytics/category",
+      mockData: MOCK_CATEGORIES,
+      isEmpty: (d) => !d?.categories?.length,
+    });
 
-  if (loading || !user) {
-    return (
-      <main className="dashboard-loading shell-gradient">
-        <div className="loading-card">
-          <div className="loading-spinner" />
-          <p>Loading your workspace...</p>
-        </div>
-      </main>
-    );
-  }
+  const { data: trendData, loading: loadingT } =
+    useDashboardData<{ trend: { month: string; amount: number }[] }>({
+      url: "/api/analytics/trends?months=6",
+      mockData: { trend: MOCK_TREND },
+      isEmpty: (d) => !d?.trend?.length,
+    });
 
-  const displayName = user.name ?? user.email ?? "Workspace owner";
-  const initials = displayName
-    .split(" ")
-    .map((word: string) => word[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  const loading = loadingS || loadingC || loadingT;
+
+  // Format trend for chart — use backend month labels or raw mock
+  const spendTrend = (trendData?.trend ?? MOCK_TREND).map((row) => ({
+    month: row.month.length === 7
+      ? format(new Date(`${row.month}-01`), "MMM")
+      : String(row.month),
+    amount: row.amount,
+  }));
+
+  const categories = catData?.categories ?? MOCK_CATEGORIES.categories;
+  const totalCatSpend = categories.reduce((s, c) => s + c.value, 0);
+  const transactions = summary?.recentTransactions ?? MOCK_SUMMARY.recentTransactions;
 
   return (
-    <main className="dashboard-shell shell-gradient">
-      <header className="dashboard-header page-section">
-        <div>
-          <p className="eyebrow">Dashboard</p>
-          <h1>{displayName}&apos;s workspace</h1>
-          <p className="supporting-copy small">Your session is active and tied to the backend cookie session.</p>
-        </div>
+    <div className="space-y-6">
+      {/* ── KPI Row ───────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {loading ? (
+          [0, 1, 2, 3].map((i) => <SkeletonCard key={i} />)
+        ) : (
+          <>
+            <KpiCard
+              label="Current Balance"
+              value={formatCurrency(summary?.cashInHand ?? 0)}
+              delta={emptyS ? "Sample data" : "Live balance"}
+              deltaType="neutral"
+              icon={Wallet}
+              accentColor="var(--chart-1)"
+              delay={0}
+            />
+            <KpiCard
+              label="Monthly Spend"
+              value={formatCurrency(summary?.monthlyExpenses ?? 0)}
+              delta={emptyS ? "Sample data" : "This month"}
+              deltaType="down"
+              icon={CreditCard}
+              accentColor="var(--chart-2)"
+              delay={75}
+            />
+            <KpiCard
+              label="Monthly Income"
+              value={formatCurrency(summary?.monthlyIncome ?? 0)}
+              delta={emptyS ? "Sample data" : "This month"}
+              deltaType="up"
+              icon={Receipt}
+              accentColor="var(--chart-3)"
+              delay={150}
+            />
+            <KpiCard
+              label="Top Category"
+              value={categories[0]?.name ?? "—"}
+              delta={categories[0] ? `₹${categories[0].value.toLocaleString("en-IN")} spent` : "No data"}
+              deltaType="neutral"
+              icon={ShoppingBag}
+              accentColor="var(--chart-4)"
+              delay={225}
+            />
+          </>
+        )}
+      </div>
 
-        <div className="dashboard-userbar">
-          <div className="avatar-badge">{initials}</div>
-          <div>
-            <strong>{displayName}</strong>
-            <span>{user.email}</span>
-          </div>
-          <button className="ghost-button" onClick={logout} type="button">
-            Sign out
-          </button>
-        </div>
-      </header>
-
-      <section className="page-section kpi-grid">
-        {metrics.map((metric) => (
-          <article key={metric.label} className="dashboard-card metric-surface">
-            <span className="muted-label">{metric.label}</span>
-            <strong>{metric.value}</strong>
-            <p>{metric.detail}</p>
-          </article>
-        ))}
-      </section>
-
-      <section className="page-section dashboard-grid">
-        <article className="dashboard-card dashboard-main-card">
-          <div className="card-heading-row">
+      {/* ── Charts Row ────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Spending Trend */}
+        <div className="chart-card lg:col-span-2 animate-fade-up delay-200">
+          <div className="flex items-start justify-between mb-4">
             <div>
-              <p className="eyebrow">Priorities</p>
-              <h2>Current focus</h2>
+              <p className="chart-card-title">Monthly Spending Trend</p>
+              <p className="chart-card-subtitle">
+                {emptyS ? "Sample data — add expenses to see your real trend" : "6-month overview · Area chart"}
+              </p>
             </div>
-            <span className="status-chip status-warm">This week</span>
+            {emptyS && (
+              <span className="badge badge-neutral text-[10px]">Demo</span>
+            )}
           </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={spendTrend} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+              <defs>
+                <linearGradient id="spendGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%"   stopColor="var(--chart-1)" stopOpacity={0.25} />
+                  <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 0" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false}
+                     tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} width={48} />
+              <Tooltip content={<CustomTooltip />} />
+              <Area type="monotone" dataKey="amount" stroke="var(--chart-1)" strokeWidth={2.5}
+                    fill="url(#spendGrad)"
+                    dot={{ r: 4, fill: "var(--chart-1)", strokeWidth: 2, stroke: "var(--card)" }}
+                    activeDot={{ r: 6, fill: "var(--chart-1)" }} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
 
-          <div className="list-stack">
-            {priorities.map((item) => (
-              <div key={item.title} className="list-row">
-                <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.owner}</p>
+        {/* Category Donut */}
+        <div className="chart-card animate-fade-up delay-300">
+          <p className="chart-card-title">Category Breakdown</p>
+          <p className="chart-card-subtitle">{emptyS ? "Sample data" : "Current month"}</p>
+          <ResponsiveContainer width="100%" height={180}>
+            <PieChart>
+              <Pie data={categories} cx="50%" cy="50%" innerRadius={55} outerRadius={78}
+                   paddingAngle={3} dataKey="value" strokeWidth={0}>
+                {categories.map((_entry, i) => (
+                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(v) => [`₹${Number(v).toLocaleString("en-IN")}`, ""]}
+                contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: 12 }} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="space-y-1.5 mt-1">
+            {categories.map((c, i) => (
+              <div key={c.name} className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
+                  <span className="text-muted-foreground">{c.name}</span>
                 </div>
-                <span className="status-chip">{item.state}</span>
+                <span className="font-semibold text-foreground">
+                  {totalCatSpend ? Math.round((c.value / totalCatSpend) * 100) : 0}%
+                </span>
               </div>
             ))}
           </div>
+        </div>
+      </div>
 
-          <div className="progress-panel">
-            <div className="card-heading-row compact-row">
-              <strong>Launch readiness</strong>
-              <span>72%</span>
-            </div>
-            <div className="progress-bar">
-              <div className="progress-bar-fill" style={{ width: "72%" }} />
-            </div>
-            <p className="muted-copy">Authentication, page structure, and session handling are now aligned.</p>
+      {/* ── Recent Transactions ───────────────────────────── */}
+      <div className="chart-card animate-fade-up delay-400">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="chart-card-title">Recent Transactions</p>
+            <p className="chart-card-subtitle">{emptyS ? "Sample data — add expenses to see real entries" : `Last ${transactions.length} entries`}</p>
           </div>
-        </article>
+          <a href="/dashboard/expenses" className="text-xs text-primary font-semibold hover:underline flex items-center gap-1">
+            View all <ArrowUpRight size={12} />
+          </a>
+        </div>
 
-        <aside className="dashboard-side-column">
-          <article className="dashboard-card">
-            <p className="eyebrow">Recent updates</p>
-            <h2>Session and UI changes</h2>
-            <ul className="simple-list compact-list">
-              {activity.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </article>
-
-          <article className="dashboard-card accent-card">
-            <p className="eyebrow">Account</p>
-            <h2>{user.provider === "google" ? "Google session active" : "Credentials session active"}</h2>
-            <p className="muted-copy">
-              {user.provider === "google"
-                ? "Your Google account is connected through Firebase and mirrored to the app session."
-                : "Your email and password session is stored with an httpOnly cookie and validated by the backend."}
-            </p>
-          </article>
-        </aside>
-      </section>
-    </main>
+        {loading ? (
+          <div className="space-y-2">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-12 rounded-lg bg-muted/50 animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {transactions.map((tx, i) => (
+              <div key={tx.id}
+                className="flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-muted/60 transition-colors cursor-pointer animate-fade-up"
+                style={{ animationDelay: `${400 + i * 50}ms` }}
+              >
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-base shrink-0 ${tx.type === "income" ? "bg-success/10" : "bg-muted"}`}>
+                  {tx.type === "income" ? "💼" : "💳"}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{tx.title}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {format(new Date(tx.date), "MMM d, yyyy")}
+                    {tx.category ? ` · ${tx.category}` : ""}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className={`text-sm font-bold stat-number ${tx.type === "income" ? "text-success" : "text-foreground"}`}>
+                    {tx.type === "income" ? "+" : "−"}{formatCurrency(tx.amount)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
