@@ -6,7 +6,8 @@ import { ScenarioAssumption, ScenarioPoint } from "@/lib/mock-data";
 import { formatINR } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRightLeft, Calculator, Lightbulb, Target } from "lucide-react";
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
+import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 async function getDashboardData<T>(userId: string, type: string): Promise<T> {
   const response = await fetch(
@@ -67,7 +68,7 @@ export default function PlanningPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
       {/* Header */}
       <div className="animate-fade-up">
         <h2 className="text-2xl font-bold text-foreground">Scenario Planning & Budget Engine</h2>
@@ -86,7 +87,14 @@ export default function PlanningPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[320px] w-full">
+            <ChartContainer
+              className="h-[320px] w-full"
+              config={{
+                baseRunway: { label: "Base", color: "var(--chart-1)" },
+                stressRunway: { label: "Stress", color: "var(--warning)" },
+                growthRunway: { label: "Growth", color: "var(--success)" },
+              }}
+            >
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={runway}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
@@ -101,15 +109,7 @@ export default function PlanningPage() {
                     tickLine={false}
                     axisLine={false}
                   />
-                  <Tooltip
-                    contentStyle={{
-                      background: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "8px",
-                      color: "var(--foreground)",
-                      fontSize: "12px",
-                    }}
-                  />
+                  <ChartTooltip content={<ChartTooltipContent valueFormatter={(value) => `${value.toFixed(1)} months`} />} />
                   <Legend
                     wrapperStyle={{ fontSize: "12px", color: "var(--muted-foreground)" }}
                   />
@@ -140,7 +140,7 @@ export default function PlanningPage() {
                   />
                 </LineChart>
               </ResponsiveContainer>
-            </div>
+            </ChartContainer>
           </CardContent>
         </Card>
 

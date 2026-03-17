@@ -5,6 +5,8 @@ import { useAuth } from "@/context/AuthContext";
 import { ComplianceAlert } from "@/lib/mock-data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarCheck, FlaskConical, ShieldAlert } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 async function getDashboardData<T>(userId: string, type: string): Promise<T> {
   const response = await fetch(
@@ -51,10 +53,10 @@ export default function CompliancePage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
       <div>
-        <h2 className="text-2xl font-display font-bold text-white">Compliance & Tax Alerts</h2>
-        <p className="text-sm text-neutral-400">Prevent penalties with a proactive calendar across tax, filing, and payroll obligations.</p>
+        <h2 className="text-2xl font-display font-bold">Compliance & Tax Alerts</h2>
+        <p className="text-sm text-muted-foreground">Prevent penalties with a proactive calendar across tax, filing, and payroll obligations.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -63,15 +65,46 @@ export default function CompliancePage() {
         <Metric title="R&D Tracking" value={alerts.filter((a) => a.category === "r&d").length} caption="Credits and evidence checkpoints" tone="upcoming" icon={<FlaskConical size={16} />} />
       </div>
 
-      <Card className="bg-neutral-900 border-neutral-800">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-white">Compliance Timeline</CardTitle>
-          <CardDescription className="text-neutral-400">Unified reminder system for filing and payment commitments.</CardDescription>
+          <CardTitle>Compliance Risk Mix</CardTitle>
+          <CardDescription>Distribution of requirements by urgency level.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ChartContainer
+            className="h-[220px] w-full"
+            config={{
+              count: { label: "Count", color: "var(--chart-1)" },
+            }}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={[
+                  { label: "Critical", count: counts.critical },
+                  { label: "Urgent", count: counts.urgent },
+                  { label: "Upcoming", count: counts.upcoming },
+                ]}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" tickLine={false} axisLine={false} />
+                <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="count" fill="var(--chart-1)" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Compliance Timeline</CardTitle>
+          <CardDescription>Unified reminder system for filing and payment commitments.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="text-xs uppercase bg-neutral-950 text-neutral-400 border-b border-neutral-800">
+              <thead className="text-xs uppercase bg-muted/40 text-muted-foreground border-b border-border">
                 <tr>
                   <th className="px-4 py-3">Requirement</th>
                   <th className="px-4 py-3">Jurisdiction</th>
@@ -82,14 +115,14 @@ export default function CompliancePage() {
               </thead>
               <tbody>
                 {alerts.map((item) => (
-                  <tr key={item.id} className="border-b border-neutral-800/50 hover:bg-neutral-800/20">
+                  <tr key={item.id} className="border-b border-border hover:bg-muted/30">
                     <td className="px-4 py-3">
-                      <p className="text-white font-medium">{item.title}</p>
-                      <p className="text-xs text-neutral-500 mt-1">{item.description}</p>
+                      <p className="font-medium">{item.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
                     </td>
-                    <td className="px-4 py-3 text-neutral-300">{item.jurisdiction}</td>
-                    <td className="px-4 py-3 text-neutral-400 uppercase">{item.category}</td>
-                    <td className="px-4 py-3 text-neutral-300">{item.dueDate}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{item.jurisdiction}</td>
+                    <td className="px-4 py-3 text-muted-foreground uppercase">{item.category}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{item.dueDate}</td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium border ${severityClass(item.severity)}`}>
                         {item.severity.toUpperCase()}

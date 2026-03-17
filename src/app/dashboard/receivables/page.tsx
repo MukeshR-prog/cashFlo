@@ -5,7 +5,10 @@ import { useAuth } from "@/context/AuthContext";
 import { Invoice } from "@/lib/mock-data";
 import { formatINR } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { AlertCircle, FileText, Send, Database, CheckCircle2, Loader2 } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 async function getDashboardData<T>(userId: string, type: string): Promise<T> {
   const response = await fetch(
@@ -98,18 +101,24 @@ export default function ReceivablesPage() {
   const efficiencyBase = 64; 
   const currentEfficiency = totalInvoices > 0 ? efficiencyBase + (paidInvoicesCount * 5) : efficiencyBase;
 
+  const agingData = [
+    { bucket: "Current", amount: invoices.filter((i) => i.status === "pending").reduce((sum, i) => sum + i.amount, 0) },
+    { bucket: "30+ Days", amount: invoices.filter((i) => i.status === "overdue").reduce((sum, i) => sum + i.amount, 0) },
+    { bucket: "Collected", amount: invoices.filter((i) => i.status === "paid").reduce((sum, i) => sum + i.amount, 0) },
+  ];
+
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-display font-bold text-white mb-1">Accounts Receivable</h2>
-          <p className="text-sm text-neutral-400">Automated collections and invoice aging tracking based on the &apos;Delayed Payment Epidemic&apos; analysis.</p>
+          <h2 className="text-2xl font-display font-bold mb-1">Accounts Receivable</h2>
+          <p className="text-sm text-muted-foreground">Automated collections and invoice aging tracking for better liquidity control.</p>
         </div>
       </div>
 
       {/* AR Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-neutral-900 border-neutral-800">
+        <Card>
           <CardContent className="p-6">
             <p className="text-sm font-medium text-neutral-400 mb-1">Total Outstanding (MRR Illusion)</p>
             <h3 className="text-3xl font-bold text-white mb-2">{formatINR(totalUncollected)}</h3>
@@ -128,25 +137,51 @@ export default function ReceivablesPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-indigo-950/20 border-indigo-900/40">
+        <Card className="bg-chart-1/10 border-chart-1/30">
           <CardContent className="p-6">
-            <p className="text-sm font-medium text-indigo-400 mb-1">Collection Efficiency</p>
-            <h3 className="text-3xl font-bold text-indigo-400 mb-2">{Math.min(currentEfficiency, 100)}%</h3>
-            <p className="text-xs text-indigo-500/80">Industry benchmark is 85%.</p>
+            <p className="text-sm font-medium text-chart-1 mb-1">Collection Efficiency</p>
+            <h3 className="text-3xl font-bold text-chart-1 mb-2">{Math.min(currentEfficiency, 100)}%</h3>
+            <Progress value={Math.min(currentEfficiency, 100)} className="mt-2" />
+            <p className="text-xs text-muted-foreground mt-2">Benchmark target is 85% for healthy startup collections.</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Outstanding Invoices List */}
-      <Card className="bg-neutral-900 border-neutral-800">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-white">Active Receivables Ledger</CardTitle>
-          <CardDescription className="text-neutral-400">Real-time tracking of contractual obligations versus actual liquidity.</CardDescription>
+          <CardTitle>Aging Distribution</CardTitle>
+          <CardDescription>Breakdown of receivables by collection stage.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ChartContainer
+            className="h-[240px] w-full"
+            config={{
+              amount: { label: "Amount", color: "var(--chart-1)" },
+            }}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={agingData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="bucket" tickLine={false} axisLine={false} />
+                <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => `$${Math.round(v / 1000)}k`} />
+                <ChartTooltip content={<ChartTooltipContent valueFormatter={(v) => `$${v.toLocaleString()}`} />} />
+                <Bar dataKey="amount" fill="var(--chart-1)" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+        </CardContent>
+      </Card>
+
+      {/* Outstanding Invoices List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Active Receivables Ledger</CardTitle>
+          <CardDescription>Real-time tracking of contractual obligations versus actual liquidity.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="text-xs uppercase bg-neutral-950 text-neutral-400 border-b border-neutral-800">
+              <thead className="text-xs uppercase bg-muted/40 text-muted-foreground border-b border-border">
                 <tr>
                   <th className="px-4 py-3 font-medium">Invoice ID</th>
                   <th className="px-4 py-3 font-medium">Enterprise Client</th>
@@ -159,9 +194,9 @@ export default function ReceivablesPage() {
               </thead>
               <tbody>
                 {invoices.map((invoice, i) => (
-                  <tr key={i} className={`border-b border-neutral-800/50 hover:bg-neutral-800/20 transition-colors ${invoice.status === 'paid' ? 'opacity-60 bg-neutral-950 flex-none' : ''}`}>
-                    <td className="px-4 py-4 text-neutral-300 font-medium flex items-center gap-2">
-                      <FileText size={16} className="text-neutral-500" />
+                  <tr key={i} className={`border-b border-border hover:bg-muted/30 transition-colors ${invoice.status === 'paid' ? 'opacity-60 bg-muted/20' : ''}`}>
+                    <td className="px-4 py-4 font-medium flex items-center gap-2">
+                      <FileText size={16} className="text-muted-foreground" />
                       {invoice.id}
                     </td>
                     <td className="px-4 py-4 text-white font-medium">{invoice.client}</td>
@@ -187,7 +222,7 @@ export default function ReceivablesPage() {
                       ) : (
                         <div className="flex justify-end gap-2">
                            <button 
-                             className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 hover:text-white h-9 px-3 py-2 transition-colors"
+                             className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium border border-border bg-muted hover:bg-secondary h-9 px-3 py-2 transition-colors"
                              title="Automated Escalatation"     
                            >
                              <Send size={14} className="text-amber-400" />

@@ -257,6 +257,11 @@
    ============================================================ */
 @layer components {
 
+  /* ── Surface card used across auth/dashboard pages ───── */
+  .card {
+    @apply rounded-xl border border-border bg-card p-6 shadow-sm;
+  }
+
   /* ── Buttons ─────────────────────────────────────────── */
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 cursor-pointer select-none;
@@ -352,7 +357,12 @@
     @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold;
   }
 
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+
   .badge-primary   { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-primary/10 text-primary; }
+  .badge-secondary { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-secondary text-secondary-foreground; }
   .badge-accent    { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-accent/10 text-accent; }
   .badge-success   { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-success/10 text-success; }
   .badge-warning   { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-warning/10 text-warning-foreground; }
