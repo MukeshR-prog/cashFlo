@@ -3,8 +3,8 @@ import {
   clearSession,
   clearSessionCookie,
   getSessionUser,
-} from "@/lib/auth";
-import { SESSION_COOKIE_NAME } from "@/lib/auth-constants";
+} from "@/app/api/_lib/auth/session";
+import { SESSION_COOKIE_NAME } from "@/app/api/_lib/auth/constants";
 
 export async function GET(req: NextRequest) {
   try {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { applySessionCookie, createSessionForUser } from "@/lib/auth";
-import connectDB from "@/lib/mongodb";
-import User from "@/models/User";
+import { applySessionCookie, createSessionForUser } from "@/app/api/_lib/auth/session";
+import connectDB from "@/app/api/_lib/db/mongodb";
+import User from "@/app/api/_lib/models/User";
 
 // Called by client after successful Firebase Google Sign-In
 // to upsert user record in MongoDB

@@ -18,7 +18,7 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace("/dashboard");
+      router.replace("/");
     }
   }, [loading, router, user]);
 
@@ -34,7 +34,7 @@ export default function SignupPage() {
     setSubmitting(true);
     try {
       await signupWithCredentials(name, email, password);
-      router.push("/dashboard");
+      router.push("/");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Signup failed");
     } finally {
@@ -46,7 +46,7 @@ export default function SignupPage() {
     setError("");
     try {
       await signInWithGoogle();
-      router.push("/dashboard");
+      router.push("/");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Google sign-in failed. Please try again.");
     }

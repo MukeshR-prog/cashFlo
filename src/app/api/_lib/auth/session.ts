@@ -1,8 +1,8 @@
 import { createHash, randomBytes } from "crypto";
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
-import User from "@/models/User";
-import { SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS } from "@/lib/auth-constants";
+import connectDB from "@/app/api/_lib/db/mongodb";
+import User from "@/app/api/_lib/models/User";
+import { SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS } from "@/app/api/_lib/auth/constants";
 
 function hashSessionToken(token: string) {
   return createHash("sha256").update(token).digest("hex");

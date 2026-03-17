@@ -5,10 +5,10 @@ import {
   clearSession,
   clearSessionCookie,
   createSessionForUser,
-} from "@/lib/auth";
-import { SESSION_COOKIE_NAME } from "@/lib/auth-constants";
-import connectDB from "@/lib/mongodb";
-import User from "@/models/User";
+} from "@/app/api/_lib/auth/session";
+import { SESSION_COOKIE_NAME } from "@/app/api/_lib/auth/constants";
+import connectDB from "@/app/api/_lib/db/mongodb";
+import User from "@/app/api/_lib/models/User";
 
 export async function POST(req: NextRequest) {
   try {

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { applySessionCookie, createSessionForUser } from "@/lib/auth";
-import connectDB from "@/lib/mongodb";
-import User from "@/models/User";
+import { applySessionCookie, createSessionForUser } from "@/app/api/_lib/auth/session";
+import connectDB from "@/app/api/_lib/db/mongodb";
+import User from "@/app/api/_lib/models/User";
 
 export async function POST(req: NextRequest) {
   try {
