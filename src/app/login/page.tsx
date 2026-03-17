@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { isFirebaseConfigured } from "@/lib/firebase";
-import { TrendingUp, ArrowRight, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { TrendingUp, ArrowRight, Eye, EyeOff, CheckCircle, AlertTriangle } from "lucide-react";
 
 export default function LoginPage() {
   return (
@@ -31,13 +31,15 @@ function LoginContent() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // If the user is already logged in (e.g., navigated back to /login),
-  // send them to the appropriate destination based on their own onboarding state.
   useEffect(() => {
     if (!loading && user) {
-      router.replace(
-        user.onboardingCompleted === false ? "/onboarding" : "/dashboard"
-      );
+      const destination =
+        user.onboardingCompleted === false
+          ? "/onboarding"
+          : user.role === "freelancer"
+            ? "/freelancer/dashboard"
+            : "/dashboard";
+      router.replace(destination);
     }
   }, [loading, router, user]);
 
@@ -46,7 +48,6 @@ function LoginContent() {
     setError("");
     setSubmitting(true);
     try {
-      // AuthContext.loginWithCredentials handles the routing decision internally
       await loginWithCredentials(email, password);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed");
@@ -73,55 +74,67 @@ function LoginContent() {
   return (
     <main className="min-h-screen bg-mesh flex">
       {/* ── Left: Brand Panel ─────────────────────────────── */}
-      <div className="hidden lg:flex flex-col justify-between w-[440px] shrink-0 border-r border-border bg-card px-10 py-12">
+      <div className="hidden lg:flex flex-col justify-between w-[460px] shrink-0 border-r border-border bg-card px-10 py-12 relative overflow-hidden">
+        {/* Background blob */}
+        <div className="absolute top-[-80px] right-[-80px] w-72 h-72 rounded-full opacity-10 blur-3xl"
+             style={{ background: "radial-gradient(circle, var(--primary), transparent)" }} />
+        <div className="absolute bottom-[-60px] left-[-60px] w-56 h-56 rounded-full opacity-8 blur-3xl"
+             style={{ background: "radial-gradient(circle, var(--accent), transparent)" }} />
+
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
+        <Link href="/" className="flex items-center gap-3 group relative z-10">
+          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all duration-200">
             <TrendingUp size={18} className="text-primary-foreground" />
           </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">Iteryx</p>
-            <p className="text-sm font-bold text-foreground">Finance</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground leading-none">Iteryx</p>
+            <p className="text-sm font-bold text-foreground leading-tight tracking-tight">Finance Platform</p>
           </div>
         </Link>
 
         {/* Headline */}
-        <div className="space-y-6 animate-fade-in-up">
+        <div className="space-y-7 animate-fade-in-up relative z-10">
           <div>
             <p className="section-eyebrow mb-3">Welcome back</p>
-            <h1 className="text-4xl font-bold text-foreground leading-tight text-balance">
+            <h1 className="text-4xl font-bold text-foreground leading-tight text-balance tracking-tight">
               Your finances,{" "}
               <span className="text-gradient">at a glance</span>
             </h1>
-            <p className="mt-4 text-muted-foreground leading-relaxed">
+            <p className="mt-4 text-muted-foreground leading-relaxed text-sm">
               Sign in to access your personalized dashboard, spending insights, and financial analytics.
             </p>
           </div>
 
           {/* Preview card mockup */}
-          <div className="rounded-2xl border border-border bg-background p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
+          <div className="rounded-2xl border border-border bg-background p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Current Balance</p>
                 <p className="text-2xl font-bold stat-number text-foreground">₹48,750</p>
               </div>
-              <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
-                <TrendingUp size={15} className="text-primary" />
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                <TrendingUp size={16} className="text-primary" />
               </div>
             </div>
-            <div className="flex gap-1 h-8">
+            <div className="flex gap-1 h-10 items-end">
               {[40, 60, 50, 80, 55, 70, 65, 90, 75, 85].map((h, i) => (
-                <div key={i} className="flex-1 rounded-sm bg-primary/20 flex items-end">
-                  <div className="w-full rounded-sm bg-primary transition-all duration-300 hover:bg-primary/80"
-                       style={{ height: `${h}%` }} />
-                </div>
+                <div key={i} className="flex-1 rounded-t-sm" style={{
+                  height: `${h}%`,
+                  background: `color-mix(in oklch, var(--primary) ${30 + i * 7}%, transparent)`,
+                }} />
               ))}
             </div>
-            <p className="text-[10px] text-success mt-2 font-medium">↑ 12% vs last month</p>
+            <div className="flex items-center justify-between mt-3">
+              <p className="text-[11px] text-success font-medium">↑ 12% vs last month</p>
+              <div className="flex items-center gap-1">
+                <span className="pulse-dot" />
+                <p className="text-[10px] text-muted-foreground">Live</p>
+              </div>
+            </div>
           </div>
 
           {/* Trust signals */}
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {trustPoints.map((point) => (
               <div key={point} className="flex items-start gap-2.5">
                 <CheckCircle size={14} className="text-success mt-0.5 shrink-0" />
@@ -131,11 +144,15 @@ function LoginContent() {
           </div>
         </div>
 
-        <p className="text-xs text-muted-foreground">© 2025 Iteryx · Privacy · Terms</p>
+        <p className="text-xs text-muted-foreground relative z-10">© 2026 Iteryx · Privacy · Terms</p>
       </div>
 
       {/* ── Right: Form ───────────────────────────────────── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-8 py-12">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-8 py-12 relative">
+        {/* Decorative circle for depth */}
+        <div className="absolute top-[-120px] right-[-120px] w-96 h-96 rounded-full opacity-5 blur-3xl pointer-events-none"
+             style={{ background: "radial-gradient(circle, var(--primary), transparent)" }} />
+
         {/* Mobile logo */}
         <Link href="/" className="flex items-center gap-2.5 mb-8 lg:hidden">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
@@ -146,8 +163,8 @@ function LoginContent() {
 
         <div className="w-full max-w-md">
           <div className="mb-7 animate-fade-up">
-            <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">Sign in</p>
-            <h2 className="text-2xl font-bold text-foreground">Access your account</h2>
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-primary mb-2">Sign in</p>
+            <h2 className="text-2xl font-bold text-foreground tracking-tight">Access your account</h2>
             <p className="text-muted-foreground text-sm mt-1">
               Enter your credentials below to continue.
             </p>
@@ -155,20 +172,19 @@ function LoginContent() {
 
           {/* Error */}
           {error && (
-            <div className="mb-5 p-3.5 rounded-xl bg-destructive/8 border border-destructive/20 text-destructive text-sm flex items-start gap-2 animate-fade-down">
-              <span className="shrink-0 mt-0.5">⚠</span>
+            <div className="premium-alert premium-alert-danger mb-5 flex items-start gap-2 text-sm text-destructive animate-fade-down">
+              <AlertTriangle size={14} className="shrink-0 mt-0.5" />
               {error}
             </div>
           )}
 
           {/* Google button */}
           <button
-            className="btn btn-outline w-full mb-5 gap-3 h-11 animate-fade-up"
+            className="btn btn-outline w-full mb-5 gap-3 h-11 animate-fade-up hover:bg-muted/60 group"
             onClick={handleGoogle}
             disabled={!isFirebaseConfigured || submitting || loading}
             type="button"
           >
-            {/* Google icon */}
             <svg width="18" height="18" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
               <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -220,7 +236,7 @@ function LoginContent() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
@@ -230,7 +246,7 @@ function LoginContent() {
             <button
               id="login-submit"
               type="submit"
-              className="btn btn-primary w-full h-11 gap-2 animate-fade-up delay-200"
+              className="btn btn-primary w-full h-11 gap-2 animate-fade-up delay-200 group"
               disabled={submitting || loading}
             >
               {submitting ? (
@@ -241,7 +257,7 @@ function LoginContent() {
               ) : (
                 <>
                   Sign in
-                  <ArrowRight size={15} />
+                  <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
                 </>
               )}
             </button>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import connectDB from "@/app/api/_lib/db/mongodb";
 import { requireSession } from "@/app/api/_lib/auth/require-session";
 import PaymentSettlement from "@/app/api/_lib/models/PaymentSettlement";
@@ -16,17 +17,18 @@ export async function GET(req: NextRequest) {
     const monthParam = req.nextUrl.searchParams.get("month");
     const year = yearParam ? Number(yearParam) : undefined;
     const month = monthParam ? Number(monthParam) : undefined;
+    const userId = new mongoose.Types.ObjectId(auth.userId);
     const { start, end } = getMonthBoundaries(year, month);
 
     const [allIn, allOut, monthIn, monthOut, recentDeductions] = await Promise.all([
-      PaymentSettlement.aggregate([{ $match: { userId: auth.userId } }, { $group: { _id: null, total: { $sum: "$amount" } } }]),
-      Expense.aggregate([{ $match: { userId: auth.userId } }, { $group: { _id: null, total: { $sum: "$amount" } } }]),
+      PaymentSettlement.aggregate([{ $match: { userId } }, { $group: { _id: null, total: { $sum: "$amount" } } }]),
+      Expense.aggregate([{ $match: { userId } }, { $group: { _id: null, total: { $sum: "$amount" } } }]),
       PaymentSettlement.aggregate([
-        { $match: { userId: auth.userId, paymentDate: { $gte: start, $lte: end } } },
+        { $match: { userId, paymentDate: { $gte: start, $lte: end } } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
       Expense.aggregate([
-        { $match: { userId: auth.userId, date: { $gte: start, $lte: end } } },
+        { $match: { userId, date: { $gte: start, $lte: end } } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
       Expense.find({ userId: auth.userId }).sort({ date: -1 }).limit(10).lean(),

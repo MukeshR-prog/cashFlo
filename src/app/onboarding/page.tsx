@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
   TrendingUp, GraduationCap, Briefcase, ArrowRight,
-  ArrowLeft, CheckCircle, Building2, BookOpen, Globe,
+  ArrowLeft, CheckCircle, Building2, BookOpen, Globe, AlertTriangle,
 } from "lucide-react";
 
 type Role = "student" | "freelancer" | "";
@@ -14,6 +14,13 @@ type Step = 1 | 2 | 3;
 export default function OnboardingPage() {
   const { user, refreshSession } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.onboardingCompleted) {
+      router.replace(user.role === "freelancer" ? "/freelancer/dashboard" : "/dashboard");
+    }
+  }, [router, user]);
 
   const [step, setStep] = useState<Step>(1);
   const [role, setRole] = useState<Role>("");
@@ -77,7 +84,12 @@ export default function OnboardingPage() {
       if (!res.ok) throw new Error(data.error || "Onboarding failed");
 
       await refreshSession();
-      router.push("/dashboard");
+      // Role-based routing after onboarding
+      if (role === "freelancer") {
+        router.push("/freelancer/dashboard");
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -320,8 +332,8 @@ export default function OnboardingPage() {
 
           {/* Error */}
           {error && (
-            <div className="mt-4 p-3 rounded-xl bg-destructive/8 border border-destructive/20 text-destructive text-sm flex items-center gap-2 animate-fade-down">
-              <span>⚠</span> {error}
+            <div className="premium-alert premium-alert-danger mt-4 flex items-center gap-2 text-sm text-destructive animate-fade-down">
+              <AlertTriangle size={14} /> {error}
             </div>
           )}
 
@@ -372,7 +384,9 @@ export default function OnboardingPage() {
         {step < 3 && (
           <p className="text-center text-xs text-muted-foreground mt-4">
             <button
-              onClick={() => router.push("/dashboard")}
+              onClick={() =>
+                router.push(role === "freelancer" ? "/freelancer/dashboard" : "/dashboard")
+              }
               className="hover:text-foreground transition-colors underline"
             >
               Skip setup for now

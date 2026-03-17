@@ -38,6 +38,7 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [todayText, setTodayText] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
@@ -60,10 +61,20 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    setTodayText(
+      new Date().toLocaleDateString("en-IN", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    );
+  }, []);
+
   return (
     <header
-      className="sticky top-0 z-40 flex items-center gap-4 h-16 px-4 sm:px-6
-                 border-b border-border bg-background/80 backdrop-blur-xl"
+      className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-border bg-background/80 px-4 backdrop-blur-xl sm:px-6"
       style={{ boxShadow: "0 1px 0 var(--border)" }}
     >
       {/* Mobile menu toggle */}
@@ -80,13 +91,8 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
         <h1 className="text-base font-bold text-foreground tracking-tight truncate">
           {pageTitle}
         </h1>
-        <p className="text-xs text-muted-foreground hidden sm:block">
-          {new Date().toLocaleDateString("en-IN", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          })}
+        <p className="hidden text-xs text-muted-foreground sm:block">
+          {todayText}
         </p>
       </div>
 

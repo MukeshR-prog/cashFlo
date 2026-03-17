@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import connectDB from "@/app/api/_lib/db/mongodb";
 import { requireSession } from "@/app/api/_lib/auth/require-session";
 import Expense from "@/app/api/_lib/models/Expense";
@@ -11,12 +12,13 @@ export async function GET(req: NextRequest) {
     await connectDB();
 
     const days = Number(req.nextUrl.searchParams.get("days") ?? "28");
+  const userId = new mongoose.Types.ObjectId(auth.userId);
     const start = new Date();
     start.setDate(start.getDate() - (days - 1));
     start.setHours(0, 0, 0, 0);
 
     const heat = await Expense.aggregate([
-      { $match: { userId: auth.userId, date: { $gte: start } } },
+      { $match: { userId, date: { $gte: start } } },
       {
         $group: {
           _id: {

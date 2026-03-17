@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import mongoose from "mongoose";
 import connectDB from "@/app/api/_lib/db/mongodb";
 import Expense from "@/app/api/_lib/models/Expense";
 import { requireSession } from "@/app/api/_lib/auth/require-session";
+
+const isValidDate = (value: string) => !Number.isNaN(new Date(value).getTime());
 
 const updateExpenseSchema = z.object({
   title: z.string().min(1).optional(),
   amount: z.number().positive().optional(),
   category: z.string().min(1).optional(),
-  date: z.string().optional(),
+  date: z.string().refine(isValidDate, "Invalid date").optional(),
   type: z.enum(["BUSINESS", "PERSONAL"]).optional(),
   paymentMode: z.string().optional(),
   notes: z.string().optional(),
@@ -20,6 +23,10 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
     if (auth instanceof NextResponse) return auth;
 
     const { id } = await context.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ error: "Invalid expense id" }, { status: 400 });
+    }
+
     const body = await req.json();
     const parsed = updateExpenseSchema.safeParse(body);
 
@@ -68,6 +75,10 @@ export async function DELETE(_req: NextRequest, context: { params: Promise<{ id:
     if (auth instanceof NextResponse) return auth;
 
     const { id } = await context.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ error: "Invalid expense id" }, { status: 400 });
+    }
+
     await connectDB();
 
     const deleted = await Expense.findOneAndDelete({ _id: id, userId: auth.userId }).lean();

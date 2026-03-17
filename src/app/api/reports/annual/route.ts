@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import connectDB from "@/app/api/_lib/db/mongodb";
 import { requireSession } from "@/app/api/_lib/auth/require-session";
 import PaymentSettlement from "@/app/api/_lib/models/PaymentSettlement";
@@ -12,17 +13,18 @@ export async function GET(req: NextRequest) {
     await connectDB();
 
     const year = Number(req.nextUrl.searchParams.get("year") ?? new Date().getFullYear());
+  const userId = new mongoose.Types.ObjectId(auth.userId);
     const start = new Date(year, 0, 1);
     const end = new Date(year, 11, 31, 23, 59, 59, 999);
 
     const [incomeRows, expenseRows] = await Promise.all([
       PaymentSettlement.aggregate([
-        { $match: { userId: auth.userId, paymentDate: { $gte: start, $lte: end } } },
+        { $match: { userId, paymentDate: { $gte: start, $lte: end } } },
         { $group: { _id: { month: { $month: "$paymentDate" } }, total: { $sum: "$amount" } } },
         { $sort: { "_id.month": 1 } },
       ]),
       Expense.aggregate([
-        { $match: { userId: auth.userId, date: { $gte: start, $lte: end } } },
+        { $match: { userId, date: { $gte: start, $lte: end } } },
         { $group: { _id: { month: { $month: "$date" } }, total: { $sum: "$amount" } } },
         { $sort: { "_id.month": 1 } },
       ]),

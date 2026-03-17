@@ -6,12 +6,16 @@ import User from "@/app/api/_lib/models/User";
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password } = await req.json();
+    const { name, email, password, role } = await req.json();
     const normalizedName = name?.trim();
     const normalizedEmail = email?.toLowerCase().trim();
 
     if (!normalizedName || !normalizedEmail || !password) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 });
+    }
+
+    if (role !== "student" && role !== "freelancer") {
+      return NextResponse.json({ error: "Please select a valid role" }, { status: 400 });
     }
 
     if (password.length < 8) {
@@ -31,8 +35,9 @@ export async function POST(req: NextRequest) {
       email: normalizedEmail,
       password: hashed,
       provider: "credentials",
-      onboardingCompleted: false,
-      role: null,
+      onboardingCompleted: true,
+      role,
+      profile: {},
     });
 
     const { sessionToken, sessionExpiresAt } = await createSessionForUser(user.id);
@@ -45,10 +50,10 @@ export async function POST(req: NextRequest) {
           email: user.email,
           image: user.image ?? null,
           provider: "credentials",
-          onboardingCompleted: false,
+          onboardingCompleted: true,
           isNewUser: true,
           loginCount: 0,
-          role: user.role ?? null,
+          role: user.role,
         },
       },
       { status: 201 }

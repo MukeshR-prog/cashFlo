@@ -27,7 +27,6 @@ export async function POST(req: NextRequest) {
         $setOnInsert: {
           email: normalizedEmail,
           onboardingCompleted: false,
-          loginCount: 0,
           role: null,
         },
         $set: {
@@ -39,7 +38,7 @@ export async function POST(req: NextRequest) {
         // Increment loginCount only for returning users
         ...(existingUser ? { $inc: { loginCount: 1 } } : {}),
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
 
     const onboardingCompleted: boolean = (user as any).onboardingCompleted ?? false;

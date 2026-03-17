@@ -37,11 +37,7 @@ export function Sidebar() {
   return (
     <aside
       suppressHydrationWarning
-      className={`
-        relative flex flex-col border-r border-sidebar-border bg-sidebar
-        transition-all duration-300 ease-in-out shrink-0
-        ${collapsed ? "w-[68px]" : "w-[260px]"}
-      `}
+      className={`relative flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 ease-in-out ${collapsed ? "w-[68px]" : "w-[260px]"}`}
     >
       {/* Logo */}
       <div className={`flex items-center gap-3 px-4 h-16 border-b border-sidebar-border ${collapsed ? "justify-center px-0" : ""}`}>
@@ -61,9 +57,7 @@ export function Sidebar() {
       {/* Collapse toggle */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-[72px] z-10 w-6 h-6 rounded-full border border-border bg-card shadow-sm
-                   flex items-center justify-center text-muted-foreground hover:text-foreground
-                   transition-all duration-150 hover:shadow-md"
+        className="absolute -right-3 top-[72px] z-10 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-all duration-150 hover:text-foreground hover:shadow-md"
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
@@ -82,11 +76,7 @@ export function Sidebar() {
             <Link
               key={href}
               href={href}
-              className={`
-                nav-item
-                ${isActive ? "nav-item-active" : ""}
-                ${collapsed ? "justify-center px-0 py-3 mx-1" : ""}
-              `}
+              className={`nav-item ${isActive ? "nav-item-active" : ""} ${collapsed ? "justify-center px-0 py-3 mx-1" : ""}`}
               title={collapsed ? label : undefined}
             >
               <Icon

@@ -2,8 +2,10 @@ export function getDateRange(searchParams: URLSearchParams) {
   const startDate = searchParams.get("startDate");
   const endDate = searchParams.get("endDate");
 
-  const start = startDate ? new Date(startDate) : null;
-  const end = endDate ? new Date(endDate) : null;
+  const parsedStart = startDate ? new Date(startDate) : null;
+  const parsedEnd = endDate ? new Date(endDate) : null;
+  const start = parsedStart && !Number.isNaN(parsedStart.getTime()) ? parsedStart : null;
+  const end = parsedEnd && !Number.isNaN(parsedEnd.getTime()) ? parsedEnd : null;
 
   if (end) {
     end.setHours(23, 59, 59, 999);

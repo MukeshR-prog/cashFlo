@@ -32,7 +32,7 @@ interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
   loginWithCredentials: (email: string, password: string) => Promise<void>;
-  signupWithCredentials: (name: string, email: string, password: string) => Promise<void>;
+  signupWithCredentials: (name: string, email: string, password: string, role: "student" | "freelancer") => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   refreshSession: () => Promise<void>;
   logout: () => Promise<void>;
@@ -47,13 +47,28 @@ interface AuthContextType {
  * Output: { action, ... }
  */
 function resolveOnboardingRoute(user: AuthUser): { route: string } {
-  const isNewUser          = user.isNewUser          ?? false;
   const onboardingCompleted = user.onboardingCompleted ?? false;
 
-  if (isNewUser || !onboardingCompleted) {
+  if (!onboardingCompleted) {
     return { route: "/onboarding" };
   }
+
+  // Role-based routing: freelancers go to their dedicated dashboard
+  if (user.role === "freelancer") {
+    return { route: "/freelancer/dashboard" };
+  }
+
   return { route: "/dashboard" };
+}
+
+async function getServerSessionUser(): Promise<AuthUser | null> {
+  const response = await fetch("/api/auth/session", { cache: "no-store" });
+  if (!response.ok) {
+    return null;
+  }
+
+  const data = await response.json();
+  return (data.user as AuthUser) ?? null;
 }
 
 // ── Context ───────────────────────────────────────────────────────────────────
@@ -71,13 +86,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const refreshSessionState = async () => {
       try {
-        const response = await fetch("/api/auth/session", { cache: "no-store" });
-        if (!response.ok) {
-          if (isMounted) setUser(null);
-          return;
-        }
-        const data = await response.json();
-        if (isMounted) setUser(data.user as AuthUser);
+        const sessionUser = await getServerSessionUser();
+        if (isMounted) setUser(sessionUser);
       } catch {
         if (isMounted) setUser(null);
       }
@@ -119,16 +129,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ) {
             return;
           }
+
           try {
+            // Backend session is source of truth for routing/role. Never let
+            // Firebase Google state override an active credentials session.
+            const backendUser = await getServerSessionUser();
+            if (backendUser?.provider === "credentials") {
+              return;
+            }
+
+            if (
+              backendUser?.email &&
+              firebaseUser.email &&
+              backendUser.email !== firebaseUser.email
+            ) {
+              return;
+            }
+
             await syncGoogleUser(firebaseUser);
           } catch {
             if (isMounted) {
-              setUser({
-                name: firebaseUser.displayName,
-                email: firebaseUser.email,
-                image: firebaseUser.photoURL,
-                provider: "google",
-              });
+              const backendUser = await getServerSessionUser();
+              setUser(backendUser);
             }
           }
         })
@@ -142,13 +164,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── refreshSession ────────────────────────────────────────────────────────
   const refreshSession = async () => {
-    const response = await fetch("/api/auth/session", { cache: "no-store" });
-    if (!response.ok) {
-      setUser(null);
-      return;
-    }
-    const data = await response.json();
-    setUser(data.user as AuthUser);
+    const sessionUser = await getServerSessionUser();
+    setUser(sessionUser);
   };
 
   // ── loginWithCredentials ──────────────────────────────────────────────────
@@ -162,6 +179,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error ?? "Login failed");
 
+    if (auth?.currentUser) {
+      await signOut(auth);
+    }
+
     const authUser = data.user as AuthUser;
     setUser(authUser);
 
@@ -171,15 +192,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // ── signupWithCredentials ─────────────────────────────────────────────────
-  const signupWithCredentials = async (name: string, email: string, password: string) => {
+  const signupWithCredentials = async (name: string, email: string, password: string, role: "student" | "freelancer") => {
     const response = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email, password, role }),
     });
 
     const data = await response.json();
     if (!response.ok) throw new Error(data.error ?? "Signup failed");
+
+    if (auth?.currentUser) {
+      await signOut(auth);
+    }
 
     const authUser = data.user as AuthUser;
     setUser(authUser);

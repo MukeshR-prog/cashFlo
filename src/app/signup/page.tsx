@@ -5,18 +5,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { isFirebaseConfigured } from "@/lib/firebase";
-import { TrendingUp, ArrowRight, Eye, EyeOff, CheckCircle, Shield, BarChart3, Brain } from "lucide-react";
+import { TrendingUp, ArrowRight, Eye, EyeOff, CheckCircle, Shield, BarChart3, Brain, AlertTriangle, Users } from "lucide-react";
 
 const benefits = [
-  { icon: BarChart3, title: "Smart analytics", body: "Visual charts and heatmaps make your spending crystal clear." },
-  { icon: Brain,     title: "AI insights",     body: "Detect spending spikes and unusual patterns automatically." },
-  { icon: Shield,    title: "Fully private",   body: "Your financial data is encrypted and never sold." },
+  { icon: BarChart3, title: "Smart analytics", body: "Visual charts and heatmaps make your spending crystal clear.", color: "var(--primary)" },
+  { icon: Brain,     title: "AI insights",     body: "Detect spending spikes and unusual patterns automatically.", color: "var(--accent)" },
+  { icon: Shield,    title: "Fully private",   body: "Your financial data is encrypted and never sold.", color: "var(--success)" },
 ];
 
 export default function SignupPage() {
   const { user, signInWithGoogle, signupWithCredentials, loading } = useAuth();
   const router = useRouter();
 
+  const [role, setRole] = useState<"student" | "freelancer">("student");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,18 +25,21 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // If already authenticated, route based on their onboarding state
   useEffect(() => {
     if (!loading && user) {
-      router.replace(
-        user.onboardingCompleted === false ? "/onboarding" : "/dashboard"
-      );
+      const destination =
+        user.onboardingCompleted === false
+          ? "/onboarding"
+          : user.role === "freelancer"
+            ? "/freelancer/dashboard"
+            : "/dashboard";
+      router.replace(destination);
     }
   }, [loading, router, user]);
 
   const passwordStrength = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : 3;
   const strengthLabel = ["", "Weak", "Good", "Strong"][passwordStrength];
-  const strengthColor = ["", "bg-destructive", "bg-warning", "bg-success"][passwordStrength];
+  const strengthColor = ["", "var(--destructive)", "var(--warning)", "var(--success)"][passwordStrength];
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,8 +50,7 @@ export default function SignupPage() {
     }
     setSubmitting(true);
     try {
-      // AuthContext.signupWithCredentials handles the routing decision internally
-      await signupWithCredentials(name, email, password);
+      await signupWithCredentials(name, email, password, role);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Signup failed");
     } finally {
@@ -67,27 +70,40 @@ export default function SignupPage() {
   return (
     <main className="min-h-screen bg-mesh flex">
       {/* ── Left: Benefits Panel ──────────────────────────── */}
-      <div className="hidden lg:flex flex-col justify-between w-[440px] shrink-0 border-r border-border bg-card px-10 py-12">
+      <div className="hidden lg:flex flex-col justify-between w-[460px] shrink-0 border-r border-border bg-card px-10 py-12 relative overflow-hidden">
+        {/* Background blobs */}
+        <div className="absolute top-[-80px] right-[-80px] w-72 h-72 rounded-full opacity-10 blur-3xl"
+             style={{ background: "radial-gradient(circle, var(--accent), transparent)" }} />
+        <div className="absolute bottom-[-60px] left-[-60px] w-56 h-56 rounded-full opacity-8 blur-3xl"
+             style={{ background: "radial-gradient(circle, var(--primary), transparent)" }} />
+
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
+        <Link href="/" className="flex items-center gap-3 group relative z-10">
+          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all duration-200">
             <TrendingUp size={18} className="text-primary-foreground" />
           </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">Iteryx</p>
-            <p className="text-sm font-bold text-foreground">Finance</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground leading-none">Iteryx</p>
+            <p className="text-sm font-bold text-foreground leading-tight tracking-tight">Finance Platform</p>
           </div>
         </Link>
 
         {/* Content */}
-        <div className="space-y-7 animate-fade-in-up">
+        <div className="space-y-7 animate-fade-in-up relative z-10">
+          {/* Social proof chip */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/60 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+            <span className="pulse-dot" />
+            <Users size={11} />
+            <span>5,200+ freelancers already joined</span>
+          </div>
+
           <div>
             <p className="section-eyebrow mb-3">New account</p>
-            <h1 className="text-4xl font-bold text-foreground leading-tight text-balance">
+            <h1 className="text-4xl font-bold text-foreground leading-tight text-balance tracking-tight">
               Financial clarity{" "}
               <span className="text-gradient">starts here</span>
             </h1>
-            <p className="mt-4 text-muted-foreground leading-relaxed">
+            <p className="mt-4 text-muted-foreground leading-relaxed text-sm">
               Join 5,200+ individuals who use Iteryx to understand and optimize their spending habits.
             </p>
           </div>
@@ -97,9 +113,12 @@ export default function SignupPage() {
             {benefits.map((b) => {
               const Icon = b.icon;
               return (
-                <div key={b.title} className="flex items-start gap-4">
-                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <Icon size={16} className="text-primary" />
+                <div key={b.title} className="flex items-start gap-4 group">
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110"
+                    style={{ background: `color-mix(in oklch, ${b.color} 10%, transparent)` }}
+                  >
+                    <Icon size={16} style={{ color: b.color }} />
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-foreground">{b.title}</p>
@@ -110,7 +129,7 @@ export default function SignupPage() {
             })}
           </div>
 
-          {/* Social proof */}
+          {/* Social proof card */}
           <div className="rounded-xl border border-border bg-background p-4">
             <div className="flex items-center gap-1 mb-2">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -119,17 +138,21 @@ export default function SignupPage() {
               <span className="text-xs font-semibold text-foreground ml-1">4.9/5</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              "The best expense tracker I've ever used. The UI is stunning and the insights are genuinely useful."
+              &ldquo;The best expense tracker I&apos;ve ever used. The UI is stunning and the insights are genuinely useful.&rdquo;
             </p>
             <p className="text-xs text-muted-foreground mt-2 font-medium">— Aditya K., Freelancer</p>
           </div>
         </div>
 
-        <p className="text-xs text-muted-foreground">© 2025 Iteryx · Privacy · Terms</p>
+        <p className="text-xs text-muted-foreground relative z-10">© 2026 Iteryx · Privacy · Terms</p>
       </div>
 
       {/* ── Right: Form ───────────────────────────────────── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-8 py-12">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-8 py-10 relative">
+        {/* Depth circle */}
+        <div className="absolute top-[-120px] right-[-120px] w-96 h-96 rounded-full opacity-5 blur-3xl pointer-events-none"
+             style={{ background: "radial-gradient(circle, var(--accent), transparent)" }} />
+
         {/* Mobile logo */}
         <Link href="/" className="flex items-center gap-2.5 mb-8 lg:hidden">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
@@ -140,15 +163,15 @@ export default function SignupPage() {
 
         <div className="w-full max-w-md">
           <div className="mb-7 animate-fade-up">
-            <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">Create account</p>
-            <h2 className="text-2xl font-bold text-foreground">Get started for free</h2>
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-primary mb-2">Create account</p>
+            <h2 className="text-2xl font-bold text-foreground tracking-tight">Get started for free</h2>
             <p className="text-muted-foreground text-sm mt-1">No credit card required.</p>
           </div>
 
           {/* Error */}
           {error && (
-            <div className="mb-5 p-3.5 rounded-xl bg-destructive/8 border border-destructive/20 text-destructive text-sm flex items-start gap-2 animate-fade-down">
-              <span className="shrink-0 mt-0.5">⚠</span>
+            <div className="premium-alert premium-alert-danger mb-5 flex items-start gap-2 text-sm text-destructive animate-fade-down">
+              <AlertTriangle size={14} className="shrink-0 mt-0.5" />
               {error}
             </div>
           )}
@@ -178,6 +201,26 @@ export default function SignupPage() {
 
           {/* Form */}
           <form onSubmit={handleSignup} className="space-y-4 animate-fade-up delay-150">
+            {/* Role selector — iOS segmented control style */}
+            <div>
+              <label className="field-label">I am signing up as</label>
+              <div className="segmented-control w-full">
+                {[
+                  { key: "student", label: "Student" },
+                  { key: "freelancer", label: "Freelancer" },
+                ].map((opt) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setRole(opt.key as "student" | "freelancer")}
+                    className={`seg-btn flex-1 ${role === opt.key ? "seg-btn-active" : ""}`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div>
               <label htmlFor="signup-name" className="field-label">Full name</label>
               <input
@@ -222,27 +265,36 @@ export default function SignupPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
 
-              {/* Password strength meter */}
+              {/* Password strength meter — animated gradient fill */}
               {password.length > 0 && (
-                <div className="mt-2 space-y-1 animate-fade-in">
-                  <div className="flex gap-1 h-1">
+                <div className="mt-2.5 space-y-1.5 animate-fade-in">
+                  <div className="flex gap-1 h-1.5">
                     {[1, 2, 3].map((level) => (
                       <div
                         key={level}
-                        className={`flex-1 rounded-full transition-all duration-300 ${
-                          passwordStrength >= level ? strengthColor : "bg-muted"
-                        }`}
+                        className="flex-1 rounded-full transition-all duration-500"
+                        style={{
+                          background: passwordStrength >= level
+                            ? strengthColor
+                            : "var(--muted)",
+                        }}
                       />
                     ))}
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Strength: <span className={`font-semibold ${["", "text-destructive", "text-warning", "text-success"][passwordStrength]}`}>{strengthLabel}</span>
+                    Strength:{" "}
+                    <span
+                      className="font-semibold transition-colors duration-300"
+                      style={{ color: passwordStrength > 0 ? strengthColor : undefined }}
+                    >
+                      {strengthLabel}
+                    </span>
                   </p>
                 </div>
               )}
@@ -258,7 +310,7 @@ export default function SignupPage() {
             <button
               id="signup-submit"
               type="submit"
-              className="btn btn-primary w-full h-11 gap-2 animate-fade-up delay-200"
+              className="btn btn-primary w-full h-11 gap-2 animate-fade-up delay-200 group"
               disabled={submitting || loading}
             >
               {submitting ? (
@@ -269,15 +321,15 @@ export default function SignupPage() {
               ) : (
                 <>
                   Create account
-                  <ArrowRight size={15} />
+                  <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
                 </>
               )}
             </button>
           </form>
 
-          {/* What's included */}
-          <div className="mt-5 p-3.5 rounded-xl bg-muted/60 border border-border animate-fade-up delay-300">
-            <p className="text-xs font-semibold text-foreground mb-2">Free plan includes:</p>
+          {/* Free plan perks */}
+          <div className="mt-5 p-4 rounded-xl bg-muted/50 border border-border animate-fade-up delay-300">
+            <p className="text-xs font-semibold text-foreground mb-2.5 tracking-tight">Free plan includes:</p>
             <div className="grid grid-cols-2 gap-1.5">
               {["50 expenses/month", "Basic charts", "3-month history", "Email support"].map((item) => (
                 <div key={item} className="flex items-center gap-1.5 text-xs text-muted-foreground">

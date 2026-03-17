@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import connectDB from "@/app/api/_lib/db/mongodb";
 import { requireSession } from "@/app/api/_lib/auth/require-session";
 import Invoice from "@/app/api/_lib/models/Invoice";
@@ -17,12 +18,13 @@ export async function GET(req: NextRequest) {
     const monthParam = req.nextUrl.searchParams.get("month");
     const year = yearParam ? Number(yearParam) : undefined;
     const month = monthParam ? Number(monthParam) : undefined;
+    const userId = new mongoose.Types.ObjectId(auth.userId);
 
     const { start, end } = getMonthBoundaries(year, month);
 
     const [invoiceAgg, paymentAgg, totalExpensesAgg, monthExpensesAgg, overdueInvoices, recentExpenses, recentPayments] = await Promise.all([
       Invoice.aggregate([
-        { $match: { userId: auth.userId } },
+        { $match: { userId } },
         {
           $group: {
             _id: null,
@@ -32,7 +34,7 @@ export async function GET(req: NextRequest) {
         },
       ]),
       PaymentSettlement.aggregate([
-        { $match: { userId: auth.userId } },
+        { $match: { userId } },
         {
           $group: {
             _id: null,
@@ -41,15 +43,15 @@ export async function GET(req: NextRequest) {
         },
       ]),
       Expense.aggregate([
-        { $match: { userId: auth.userId } },
+        { $match: { userId } },
         { $group: { _id: null, totalExpenses: { $sum: "$amount" } } },
       ]),
       Expense.aggregate([
-        { $match: { userId: auth.userId, date: { $gte: start, $lte: end } } },
+        { $match: { userId, date: { $gte: start, $lte: end } } },
         { $group: { _id: null, monthlyExpenses: { $sum: "$amount" } } },
       ]),
       Invoice.aggregate([
-        { $match: { userId: auth.userId, status: "overdue" } },
+        { $match: { userId, status: "overdue" } },
         { $group: { _id: null, overdueAmount: { $sum: "$amountDue" } } },
       ]),
       Expense.find({ userId: auth.userId }).sort({ date: -1 }).limit(5).lean(),
@@ -61,7 +63,7 @@ export async function GET(req: NextRequest) {
     const totalReceived = paymentAgg[0]?.totalReceived ?? 0;
     const totalExpenses = totalExpensesAgg[0]?.totalExpenses ?? 0;
     const monthlyIncome = PaymentSettlement.aggregate([
-      { $match: { userId: auth.userId, paymentDate: { $gte: start, $lte: end } } },
+      { $match: { userId, paymentDate: { $gte: start, $lte: end } } },
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]);
 

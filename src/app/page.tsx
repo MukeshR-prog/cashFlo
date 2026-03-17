@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import {
   ArrowRight, TrendingUp, BarChart3, Shield, Zap, CheckCircle,
-  LineChart, Receipt, Brain, ChevronRight, Star,
+  LineChart, Receipt, Brain, ChevronRight, Star, Sparkles,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
@@ -21,13 +21,13 @@ const features = [
     icon: BarChart3,
     title: "Real-time Analytics",
     body: "Professional charts and heatmaps give you instant clarity on where your money goes — no guesswork needed.",
-    color: "var(--chart-1)",
+    color: "var(--primary)",
   },
   {
     icon: Brain,
     title: "AI-Powered Insights",
     body: "Pattern detection flags spending spikes, unusual activity, and trends before they become problems.",
-    color: "var(--chart-2)",
+    color: "var(--accent)",
   },
   {
     icon: Shield,
@@ -39,13 +39,13 @@ const features = [
     icon: LineChart,
     title: "Budget Tracking",
     body: "Set monthly budgets per category and track progress in real-time with visual progress indicators.",
-    color: "var(--chart-3)",
+    color: "var(--primary)",
   },
   {
     icon: Receipt,
     title: "Expense Management",
     body: "Log expenses in seconds with smart category detection, multi-device sync, and rich filtering.",
-    color: "var(--chart-4)",
+    color: "var(--accent)",
   },
   {
     icon: Zap,
@@ -110,35 +110,45 @@ const plans = [
   },
 ];
 
+const trustBrands = ["Razorpay", "Freshworks", "Zerodha", "Groww", "CRED", "Razorpay", "Freshworks", "Zerodha", "Groww", "CRED"];
+
 export default function LandingPage() {
   const { user } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const dashboardHref = user?.role === "freelancer" ? "/freelancer/dashboard" : "/dashboard";
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    const handleScroll = () => setScrolled(window.scrollY > 12);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
       {/* ── Navbar ────────────────────────────────────────── */}
-      <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
+      <nav className={`sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl transition-all duration-300 ${scrolled ? "border-border shadow-sm" : "border-transparent"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-16 gap-6">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all duration-200">
               <TrendingUp size={16} className="text-primary-foreground" />
             </div>
-            <span className="text-base font-bold text-foreground">Iteryx</span>
+            <span className="text-base font-bold text-foreground tracking-tight">Iteryx</span>
           </Link>
 
           {/* Nav links */}
-          <div className="hidden md:flex items-center gap-1 flex-1">
+          <div className="hidden md:flex items-center gap-0.5 flex-1">
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-all duration-150"
+                className="relative px-3.5 py-1.5 text-sm text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-all duration-150 group"
               >
                 {link.label}
+                <span className="absolute bottom-0.5 left-3.5 right-3.5 h-px bg-primary scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left rounded-full" />
               </a>
             ))}
           </div>
@@ -154,7 +164,7 @@ export default function LandingPage() {
               </button>
             )}
             {user ? (
-              <Link href="/dashboard" className="btn btn-primary btn-sm gap-1.5">
+              <Link href={dashboardHref} className="btn btn-primary btn-sm gap-1.5">
                 Dashboard <ArrowRight size={13} />
               </Link>
             ) : (
@@ -173,98 +183,136 @@ export default function LandingPage() {
 
       {/* ── Hero ──────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-mesh">
-        {/* Subtle grid */}
+        {/* Grid overlay */}
         <div className="absolute inset-0 grid-pattern pointer-events-none" />
+        {/* Blurred blobs */}
+        <div className="hero-blob w-[600px] h-[600px] bg-primary top-[-200px] left-[-100px]" />
+        <div className="hero-blob w-[400px] h-[400px] bg-accent bottom-[-100px] right-[-80px]" style={{ animationDelay: "3s" }} />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 text-center">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-28 text-center">
           {/* Pill badge */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-muted-foreground mb-8 animate-fade-down shadow-sm">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/80 backdrop-blur px-3.5 py-1.5 text-xs font-semibold text-muted-foreground mb-8 animate-fade-down shadow-sm">
             <span className="pulse-dot" />
+            <Sparkles size={11} className="text-primary" />
             <span>New: AI spending pattern detection is live</span>
             <ChevronRight size={12} />
           </div>
 
-          {/* Headline */}
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-foreground tracking-tight text-balance mb-6 animate-fade-up">
-            Take control of your{" "}
-            <span className="text-gradient">finances</span>
-            <br />
-            with clarity
+          {/* Headline — staggered reveal */}
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-foreground tracking-tight text-balance mb-6">
+            <span className="block animate-fade-up">Take control of your</span>
+            <span className="block animate-fade-up delay-75">
+              <span className="text-gradient">finances</span>
+            </span>
+            <span className="block animate-fade-up delay-150">with clarity</span>
           </h1>
 
           {/* Sub */}
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 text-balance animate-fade-up delay-100">
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 text-balance animate-fade-up delay-200">
             Iteryx turns raw expense data into actionable intelligence. Track spending, spot patterns, and make confident financial decisions — all in one place.
           </p>
 
           {/* CTAs */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mb-16 animate-fade-up delay-200">
-            <Link href="/signup" className="btn btn-primary btn-lg gap-2 shadow-md hover:shadow-lg">
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-16 animate-fade-up delay-300">
+            <Link href="/signup" className="btn btn-primary btn-lg gap-2 shadow-md hover:shadow-lg group">
               Start for free
-              <ArrowRight size={17} />
+              <ArrowRight size={17} className="group-hover:translate-x-0.5 transition-transform duration-200" />
             </Link>
-            <Link href="/dashboard" className="btn btn-outline btn-lg gap-2">
+            <Link href={dashboardHref} className="btn btn-outline btn-lg gap-2">
               See the dashboard
               <BarChart3 size={16} />
             </Link>
           </div>
 
           {/* Stats bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl mx-auto animate-fade-up delay-300">
-            {stats.map((s) => (
-              <div key={s.label} className="text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 max-w-2xl mx-auto animate-fade-up delay-400">
+            {stats.map((s, i) => (
+              <div key={s.label} className="text-center animate-count-up" style={{ animationDelay: `${400 + i * 80}ms` }}>
                 <p className="text-2xl font-bold stat-number text-foreground">{s.value}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
               </div>
             ))}
           </div>
 
-          {/* Dashboard preview card */}
-          <div className="mt-16 relative max-w-4xl mx-auto animate-fade-up delay-400">
-            <div className="absolute -inset-2 rounded-3xl opacity-20 blur-2xl"
+          {/* Floating dashboard preview — layered cards */}
+          <div className="mt-20 relative max-w-4xl mx-auto animate-fade-up delay-500">
+            {/* Glow halo */}
+            <div className="absolute -inset-4 rounded-3xl opacity-30 blur-3xl"
                  style={{ background: "radial-gradient(ellipse at center, var(--primary), transparent 70%)" }} />
-            <div className="relative rounded-2xl border border-border bg-card shadow-xl overflow-hidden">
-              {/* Fake dashboard header */}
+
+            {/* Shadow card behind */}
+            <div className="absolute inset-x-6 -bottom-3 top-3 rounded-2xl border border-border bg-muted/50 opacity-40 blur-sm" />
+
+            {/* Main card */}
+            <div className="relative rounded-2xl border border-border bg-card shadow-xl overflow-hidden noise">
+              {/* Fake browser chrome */}
               <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-sidebar">
-                <div className="w-3 h-3 rounded-full bg-destructive opacity-60" />
-                <div className="w-3 h-3 rounded-full bg-warning opacity-60" />
-                <div className="w-3 h-3 rounded-full bg-success opacity-60" />
-                <div className="flex-1 mx-8 h-5 rounded-full bg-muted/80" />
+                <div className="w-3 h-3 rounded-full bg-destructive/60" />
+                <div className="w-3 h-3 rounded-full bg-warning/60" />
+                <div className="w-3 h-3 rounded-full bg-success/60" />
+                <div className="flex-1 mx-6 h-5 rounded-full bg-muted/80" />
               </div>
               {/* Fake dashboard content */}
               <div className="p-5 grid grid-cols-4 gap-3">
-                {["₹48,750", "₹26,400", "47", "Food"].map((v, i) => (
-                  <div key={i} className="rounded-xl bg-muted/60 p-3.5 space-y-2">
-                    <div className="h-2 w-12 rounded skeleton" />
-                    <p className="text-base font-bold stat-number text-foreground">{v}</p>
-                    <div className="h-1.5 w-8 rounded skeleton" />
+                {[
+                  { label: "Total Invoiced", value: "₹2,45,000" },
+                  { label: "Cash In", value: "₹1,88,500" },
+                  { label: "Pending", value: "₹38,200" },
+                  { label: "Overdue", value: "₹18,300" },
+                ].map((card, i) => (
+                  <div key={i} className="rounded-xl bg-muted/60 p-3.5 space-y-1.5 border border-border/50">
+                    <div className="h-1.5 w-14 rounded skeleton" />
+                    <p className="text-sm font-bold stat-number text-foreground">{card.value}</p>
+                    <div className="h-1.5 w-10 rounded skeleton" />
                   </div>
                 ))}
-                <div className="col-span-3 rounded-xl bg-muted/60 p-3.5 h-28 skeleton" />
-                <div className="col-span-1 rounded-xl bg-muted/60 p-3.5 h-28 skeleton" />
+                <div className="col-span-3 rounded-xl bg-muted/60 border border-border/50 p-3.5 h-32">
+                  {/* Mini chart bars */}
+                  <div className="flex items-end gap-1.5 h-full pb-1">
+                    {[45, 70, 50, 85, 60, 90, 72, 80, 65, 95].map((h, i) => (
+                      <div key={i} className="flex-1 rounded-t-sm" style={{
+                        height: `${h}%`,
+                        background: `color-mix(in oklch, var(--primary) ${40 + i * 6}%, transparent)`,
+                      }} />
+                    ))}
+                  </div>
+                </div>
+                <div className="col-span-1 rounded-xl bg-muted/60 border border-border/50 p-3.5 h-32 flex flex-col justify-center items-center gap-2">
+                  <div className="w-16 h-16 rounded-full border-4 border-primary/20 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full border-4 border-primary" />
+                  </div>
+                  <div className="h-1.5 w-12 rounded skeleton" />
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Trust logos ───────────────────────────────────── */}
-      <section className="border-y border-border bg-muted/30 py-6">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-5">
+      {/* ── Trust logos marquee ─────────────────────────────── */}
+      <section className="border-y border-border bg-muted/30 py-6 overflow-hidden">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center mb-5">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             Trusted by professionals at
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-8 opacity-50">
-            {["Razorpay", "Freshworks", "Zerodha", "Groww", "CRED"].map((name) => (
-              <span key={name} className="text-sm font-bold text-muted-foreground">{name}</span>
-            ))}
+        </div>
+        <div className="relative">
+          {/* Fade edges */}
+          <div className="absolute left-0 top-0 bottom-0 w-24 z-10" style={{ background: "linear-gradient(to right, var(--background), transparent)" }} />
+          <div className="absolute right-0 top-0 bottom-0 w-24 z-10" style={{ background: "linear-gradient(to left, var(--background), transparent)" }} />
+          <div className="flex overflow-hidden">
+            <div className="marquee-track">
+              {[...trustBrands, ...trustBrands].map((name, i) => (
+                <span key={i} className="text-sm font-bold text-muted-foreground/50 px-6 shrink-0">{name}</span>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* ── Features ──────────────────────────────────────── */}
       <section id="features" className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
+        <div className="text-center mb-16">
           <p className="section-eyebrow mb-3">Features</p>
           <h2 className="section-title mb-4">Everything you need to track smarter</h2>
           <p className="section-body max-w-xl mx-auto">
@@ -277,16 +325,19 @@ export default function LandingPage() {
             return (
               <div
                 key={f.title}
-                className="card-hover group animate-fade-up"
-                style={{ animationDelay: `${i * 60}ms` }}
+                className="group relative rounded-xl border border-border bg-card p-6 shadow-sm transition-all duration-250 hover:shadow-md hover:-translate-y-1 hover:border-primary/20 overflow-hidden animate-fade-up cursor-pointer"
+                style={{ animationDelay: `${i * 70}ms` }}
               >
+                {/* Subtle gradient on hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/3 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
                 <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 shadow-sm transition-transform duration-200 group-hover:scale-110"
-                  style={{ background: `color-mix(in oklch, ${f.color} 12%, transparent)` }}
+                  className="w-11 h-11 rounded-xl flex items-center justify-center mb-4 shadow-sm transition-transform duration-200 group-hover:scale-110"
+                  style={{ background: `color-mix(in oklch, ${f.color} 10%, transparent)` }}
                 >
-                  <Icon size={19} style={{ color: f.color }} />
+                  <Icon size={20} style={{ color: f.color }} />
                 </div>
-                <h3 className="text-base font-bold text-foreground mb-2">{f.title}</h3>
+                <h3 className="text-base font-bold text-foreground mb-2 tracking-tight">{f.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{f.body}</p>
               </div>
             );
@@ -295,25 +346,25 @@ export default function LandingPage() {
       </section>
 
       {/* ── Testimonials ─────────────────────────────────── */}
-      <section id="insights" className="py-20 bg-muted/30 border-y border-border">
+      <section id="insights" className="py-20 bg-muted/20 border-y border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
+          <div className="text-center mb-14">
             <p className="section-eyebrow mb-3">Testimonials</p>
             <h2 className="section-title">Loved by finance-conscious people</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {testimonials.map((t, i) => (
               <div
                 key={t.name}
-                className="card-hover flex flex-col gap-4 animate-fade-up"
-                style={{ animationDelay: `${i * 80}ms` }}
+                className="group relative rounded-xl border border-border bg-card p-6 shadow-sm transition-all duration-250 hover:shadow-md hover:-translate-y-1 hover:border-primary/20 flex flex-col gap-4 animate-fade-up"
+                style={{ animationDelay: `${i * 90}ms` }}
               >
                 <div className="flex items-center gap-1 text-warning">
                   {Array.from({ length: 5 }).map((_, i) => <Star key={i} size={13} fill="currentColor" />)}
                 </div>
-                <p className="text-sm text-foreground leading-relaxed flex-1">"{t.quote}"</p>
+                <p className="text-sm text-foreground leading-relaxed flex-1">&ldquo;{t.quote}&rdquo;</p>
                 <div className="flex items-center gap-3 pt-3 border-t border-border">
-                  <div className="w-9 h-9 rounded-full bg-primary/15 text-primary text-xs font-bold flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0 ring-2 ring-primary/15">
                     {t.initials}
                   </div>
                   <div>
@@ -340,21 +391,21 @@ export default function LandingPage() {
           {plans.map((plan, i) => (
             <div
               key={plan.name}
-              className={`relative rounded-2xl border p-6 transition-all duration-200 animate-fade-up ${
+              className={`relative rounded-2xl border p-6 transition-all duration-250 animate-fade-up ${
                 plan.highlighted
-                  ? "border-primary bg-primary/4 shadow-lg ring-1 ring-primary/30"
-                  : "border-border bg-card hover:shadow-md"
+                  ? "border-primary bg-card shadow-xl ring-2 ring-primary/20 hover:shadow-2xl hover:-translate-y-1"
+                  : "border-border bg-card hover:shadow-md hover:-translate-y-0.5 hover:border-primary/20"
               }`}
-              style={{ animationDelay: `${i * 80}ms` }}
+              style={{ animationDelay: `${i * 90}ms` }}
             >
               {plan.highlighted && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="rounded-full bg-primary px-3 py-1 text-[11px] font-bold text-primary-foreground shadow">
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                  <span className="rounded-full bg-primary px-4 py-1.5 text-[11px] font-bold text-primary-foreground shadow-md tracking-wide">
                     Most popular
                   </span>
                 </div>
               )}
-              <p className="text-sm font-bold text-muted-foreground mb-2">{plan.name}</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">{plan.name}</p>
               <div className="flex items-baseline gap-1 mb-5">
                 <span className="text-4xl font-bold stat-number text-foreground">{plan.price}</span>
                 <span className="text-sm text-muted-foreground">{plan.period}</span>
@@ -369,36 +420,45 @@ export default function LandingPage() {
               </ul>
               <Link
                 href="/signup"
-                className={`btn w-full ${plan.highlighted ? "btn-primary" : "btn-outline"}`}
+                className={`btn w-full group ${plan.highlighted ? "btn-primary gap-2" : "btn-outline"}`}
               >
                 {plan.cta}
+                {plan.highlighted && <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />}
               </Link>
+              {plan.highlighted && (
+                <p className="text-center text-[11px] text-muted-foreground mt-3">✓ 14-day free trial, no credit card</p>
+              )}
             </div>
           ))}
         </div>
       </section>
 
       {/* ── CTA Banner ───────────────────────────────────── */}
-      <section className="relative overflow-hidden border-t border-border bg-primary py-20 text-center">
-        <div className="absolute inset-0 opacity-20">
+      <section className="relative overflow-hidden border-t border-border py-24 text-center">
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 animate-gradient-x" style={{
+          background: "linear-gradient(135deg, var(--primary) 0%, var(--accent) 50%, var(--primary) 100%)",
+          backgroundSize: "200% 200%",
+        }} />
+        <div className="absolute inset-0 opacity-15">
           <div className="absolute inset-0 dot-pattern" />
         </div>
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6">
-          <h2 className="text-4xl sm:text-5xl font-bold text-primary-foreground mb-5 tracking-tight">
+          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-5 tracking-tight text-balance">
             Start tracking smarter today
           </h2>
-          <p className="text-primary-foreground/80 text-lg mb-8">
+          <p className="text-white/80 text-lg mb-8">
             Join 5,200+ people who have taken control of their finances with Iteryx.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/signup"
-              className="btn btn-lg gap-2 bg-white text-primary hover:bg-white/90 font-bold shadow-md"
+              className="btn btn-lg gap-2 bg-white text-primary hover:bg-white/95 font-bold shadow-lg group"
             >
               Create free account
-              <ArrowRight size={17} />
+              <ArrowRight size={17} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
-            <Link href="/dashboard" className="btn btn-lg gap-2 bg-transparent border border-primary-foreground/30 text-primary-foreground hover:bg-white/10">
+            <Link href={dashboardHref} className="btn btn-lg gap-2 bg-white/10 border border-white/20 text-white hover:bg-white/20 backdrop-blur">
               Explore dashboard
             </Link>
           </div>
@@ -406,7 +466,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Footer ───────────────────────────────────────── */}
-      <footer className="border-t border-border bg-background py-10">
+      <footer className="border-t border-border bg-background py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2.5">
@@ -414,13 +474,15 @@ export default function LandingPage() {
                 <TrendingUp size={12} className="text-primary-foreground" />
               </div>
               <span className="text-sm font-bold text-foreground">Iteryx</span>
+              <span className="text-xs text-muted-foreground ml-1">— Smart Finance</span>
             </div>
             <div className="flex items-center gap-5 text-xs text-muted-foreground">
               <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
               <a href="#" className="hover:text-foreground transition-colors">Terms</a>
               <a href="#" className="hover:text-foreground transition-colors">Contact</a>
+              <a href="#" className="hover:text-foreground transition-colors">Blog</a>
             </div>
-            <p className="text-xs text-muted-foreground">© 2025 Iteryx. All rights reserved.</p>
+            <p className="text-xs text-muted-foreground">© 2026 Iteryx. All rights reserved.</p>
           </div>
         </div>
       </footer>

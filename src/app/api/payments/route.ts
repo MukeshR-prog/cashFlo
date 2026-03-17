@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import mongoose from "mongoose";
 import connectDB from "@/app/api/_lib/db/mongodb";
 import { requireSession } from "@/app/api/_lib/auth/require-session";
 import Invoice from "@/app/api/_lib/models/Invoice";
 import PaymentSettlement from "@/app/api/_lib/models/PaymentSettlement";
 import { resolveInvoiceStatusAfterPayment } from "@/app/api/_lib/finance/invoice-status";
 
+const isValidDate = (value: string) => !Number.isNaN(new Date(value).getTime());
+
 const createPaymentSchema = z.object({
-  invoiceId: z.string().min(1),
+  invoiceId: z.string().min(1).refine((value) => mongoose.isValidObjectId(value), "Invalid invoice id"),
   amount: z.number().positive(),
-  paymentDate: z.string().optional(),
+  paymentDate: z.string().refine(isValidDate, "Invalid payment date").optional(),
   paymentMode: z.string().min(1),
   transactionId: z.string().optional(),
   payerName: z.string().optional(),

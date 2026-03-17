@@ -21,11 +21,7 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    const user = await User.findOneAndUpdate(
-      { email: normalizedEmail },
-      { $inc: { loginCount: 1 } },
-      { new: true }
-    );
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user || !user.password) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
@@ -35,6 +31,9 @@ export async function POST(req: NextRequest) {
     if (!valid) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
+
+    user.loginCount = ((user as any).loginCount ?? 0) + 1;
+    await user.save();
 
     const onboardingCompleted = (user as any).onboardingCompleted ?? false;
     const loginCount: number = (user as any).loginCount ?? 1;

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import mongoose from "mongoose";
 import connectDB from "@/app/api/_lib/db/mongodb";
 import Client from "@/app/api/_lib/models/Client";
 import { requireSession } from "@/app/api/_lib/auth/require-session";
@@ -16,6 +17,10 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
     if (auth instanceof NextResponse) return auth;
 
     const { id } = await context.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ error: "Invalid client id" }, { status: 400 });
+    }
+
     const body = await req.json();
     const parsed = updateClientSchema.safeParse(body);
 
@@ -55,6 +60,10 @@ export async function DELETE(_req: NextRequest, context: { params: Promise<{ id:
     if (auth instanceof NextResponse) return auth;
 
     const { id } = await context.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ error: "Invalid client id" }, { status: 400 });
+    }
+
     await connectDB();
 
     const deleted = await Client.findOneAndDelete({ _id: id, userId: auth.userId }).lean();

@@ -5,11 +5,13 @@ import Expense from "@/app/api/_lib/models/Expense";
 import { requireSession } from "@/app/api/_lib/auth/require-session";
 import { getDateRange } from "@/app/api/_lib/finance/date-range";
 
+const isValidDate = (value: string) => !Number.isNaN(new Date(value).getTime());
+
 const createExpenseSchema = z.object({
   title: z.string().min(1),
   amount: z.number().positive(),
   category: z.string().min(1),
-  date: z.string(),
+  date: z.string().refine(isValidDate, "Invalid date"),
   type: z.enum(["BUSINESS", "PERSONAL"]).default("PERSONAL"),
   paymentMode: z.string().optional(),
   notes: z.string().optional(),

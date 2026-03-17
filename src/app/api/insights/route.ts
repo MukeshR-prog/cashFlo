@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import connectDB from "@/app/api/_lib/db/mongodb";
 import { requireSession } from "@/app/api/_lib/auth/require-session";
 import Expense from "@/app/api/_lib/models/Expense";
@@ -9,6 +10,7 @@ export async function GET() {
     if (auth instanceof NextResponse) return auth;
 
     await connectDB();
+  const userId = new mongoose.Types.ObjectId(auth.userId);
 
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -17,21 +19,21 @@ export async function GET() {
 
     const [currentMonth, prevMonth, topCategories, recurringCandidates] = await Promise.all([
       Expense.aggregate([
-        { $match: { userId: auth.userId, date: { $gte: currentMonthStart } } },
+        { $match: { userId, date: { $gte: currentMonthStart } } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
       Expense.aggregate([
-        { $match: { userId: auth.userId, date: { $gte: prevMonthStart, $lte: prevMonthEnd } } },
+        { $match: { userId, date: { $gte: prevMonthStart, $lte: prevMonthEnd } } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
       Expense.aggregate([
-        { $match: { userId: auth.userId, date: { $gte: currentMonthStart } } },
+        { $match: { userId, date: { $gte: currentMonthStart } } },
         { $group: { _id: "$category", total: { $sum: "$amount" } } },
         { $sort: { total: -1 } },
         { $limit: 5 },
       ]),
       Expense.aggregate([
-        { $match: { userId: auth.userId } },
+        { $match: { userId } },
         { $group: { _id: "$title", count: { $sum: 1 }, total: { $sum: "$amount" } } },
         { $match: { count: { $gte: 2 } } },
         { $sort: { count: -1 } },

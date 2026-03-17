@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import mongoose from "mongoose";
 import connectDB from "@/app/api/_lib/db/mongodb";
 import Invoice from "@/app/api/_lib/models/Invoice";
 import { requireSession } from "@/app/api/_lib/auth/require-session";
 import { resolveInvoiceStatusAfterPayment } from "@/app/api/_lib/finance/invoice-status";
+
+const isValidDate = (value: string) => !Number.isNaN(new Date(value).getTime());
 
 const updateItemSchema = z.object({
   description: z.string().min(1),
@@ -13,8 +16,8 @@ const updateItemSchema = z.object({
 
 const updateInvoiceSchema = z.object({
   invoiceNumber: z.string().min(1).optional(),
-  issueDate: z.string().optional(),
-  dueDate: z.string().optional(),
+  issueDate: z.string().refine(isValidDate, "Invalid issue date").optional(),
+  dueDate: z.string().refine(isValidDate, "Invalid due date").optional(),
   items: z.array(updateItemSchema).optional(),
   paymentLink: z.string().optional(),
   notes: z.string().optional(),
@@ -27,6 +30,10 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
     if (auth instanceof NextResponse) return auth;
 
     const { id } = await context.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ error: "Invalid invoice id" }, { status: 400 });
+    }
+
     await connectDB();
 
     const invoice = await Invoice.findOne({ _id: id, userId: auth.userId }).lean();
@@ -62,6 +69,10 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
     if (auth instanceof NextResponse) return auth;
 
     const { id } = await context.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ error: "Invalid invoice id" }, { status: 400 });
+    }
+
     const body = await req.json();
     const parsed = updateInvoiceSchema.safeParse(body);
 
@@ -126,6 +137,10 @@ export async function DELETE(_req: NextRequest, context: { params: Promise<{ id:
     if (auth instanceof NextResponse) return auth;
 
     const { id } = await context.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ error: "Invalid invoice id" }, { status: 400 });
+    }
+
     await connectDB();
 
     const deleted = await Invoice.findOneAndDelete({ _id: id, userId: auth.userId }).lean();

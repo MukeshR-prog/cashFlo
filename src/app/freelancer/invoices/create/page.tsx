@@ -1,0 +1,315 @@
+"use client";
+
+import { useState } from "react";
+import { Plus, Save, Send, FileDown, Eye, Trash2, User } from "lucide-react";
+import Link from "next/link";
+
+const CATEGORIES = ["Software", "Design", "Development", "Consulting", "Marketing", "Content", "Support"];
+const CLIENTS = ["Pixel Studio", "CodeBase Inc.", "Arjun Dev", "Nexus Labs", "TrueVen Co.", "Nova Systems"];
+
+interface LineItem {
+  id: number;
+  description: string;
+  qty: number;
+  rate: number;
+}
+
+export default function CreateInvoicePage() {
+  const [client, setClient] = useState("");
+  const [invoiceNo] = useState("INV-025");
+  const [dueDate, setDueDate] = useState("");
+  const [notes, setNotes] = useState("");
+  const [terms, setTerms] = useState("Payment due within 30 days of invoice date.");
+  const [paymentLink, setPaymentLink] = useState("https://pay.iteryx.com/inv-025");
+  const [methods, setMethods] = useState<string[]>(["UPI", "Bank", "PayPal"]);
+  const [items, setItems] = useState<LineItem[]>([
+    { id: 1, description: "", qty: 1, rate: 0 },
+  ]);
+
+  const addItem = () => {
+    setItems((prev) => [...prev, { id: Date.now(), description: "", qty: 1, rate: 0 }]);
+  };
+
+  const removeItem = (id: number) => {
+    if (items.length === 1) return;
+    setItems((prev) => prev.filter((i) => i.id !== id));
+  };
+
+  const updateItem = (id: number, field: keyof LineItem, value: string | number) => {
+    setItems((prev) => prev.map((i) => i.id === id ? { ...i, [field]: value } : i));
+  };
+
+  const subtotal = items.reduce((s, i) => s + i.qty * i.rate, 0);
+  const tax = Math.round(subtotal * 0.18);
+  const total = subtotal + tax;
+
+  const fmt = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+
+  return (
+    <div className="space-y-5 animate-fade-up">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {[
+          { href: "/freelancer/invoices", label: "All Invoices" },
+          { href: "/freelancer/invoices/create", label: "Create" },
+          { href: "/freelancer/invoices/drafts", label: "Drafts" },
+          { href: "/freelancer/invoices/sent", label: "Sent & Due" },
+          { href: "/freelancer/invoices/timeline", label: "Timeline" },
+          { href: "/freelancer/invoices/reports", label: "Reports" },
+        ].map((tab) => (
+          <Link key={tab.href} href={tab.href} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${tab.href === "/freelancer/invoices/create" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+            {tab.label}
+          </Link>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+      {/* ── Left: Form ──────────────────────────────────────── */}
+      <div className="space-y-5">
+
+        {/* Invoice Header */}
+        <div className="chart-card space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold text-foreground">Invoice Details</p>
+            <span className="badge badge-primary font-mono">{invoiceNo}</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="field-label">Client</label>
+              <select
+                className="field-input"
+                value={client}
+                onChange={(e) => setClient(e.target.value)}
+              >
+                <option value="">Select client...</option>
+                {CLIENTS.map((c) => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="field-label">Due Date</label>
+              <input
+                type="date"
+                className="field-input"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Line Items */}
+        <div className="chart-card space-y-3">
+          <p className="text-sm font-bold text-foreground">Line Items</p>
+          <div className="space-y-2">
+            {items.map((item, i) => (
+              <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
+                <input
+                  type="text"
+                  placeholder={`Item ${i + 1} description`}
+                  className="field-input col-span-6"
+                  value={item.description}
+                  onChange={(e) => updateItem(item.id, "description", e.target.value)}
+                />
+                <input
+                  type="number"
+                  placeholder="Qty"
+                  className="field-input col-span-2 text-center"
+                  value={item.qty}
+                  min={1}
+                  onChange={(e) => updateItem(item.id, "qty", Number(e.target.value))}
+                />
+                <input
+                  type="number"
+                  placeholder="Rate (₹)"
+                  className="field-input col-span-3"
+                  value={item.rate || ""}
+                  onChange={(e) => updateItem(item.id, "rate", Number(e.target.value))}
+                />
+                <button
+                  onClick={() => removeItem(item.id)}
+                  className="col-span-1 flex justify-center text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button onClick={addItem} className="btn btn-ghost btn-sm gap-1.5 text-primary">
+            <Plus size={14} /> Add Item
+          </button>
+        </div>
+
+        {/* Billing Summary */}
+        <div className="chart-card space-y-3">
+          <p className="text-sm font-bold text-foreground">Billing Summary</p>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between text-muted-foreground">
+              <span>Subtotal</span>
+              <span className="font-medium text-foreground stat-number">{fmt(subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-muted-foreground">
+              <span>GST (18%)</span>
+              <span className="font-medium text-foreground stat-number">{fmt(tax)}</span>
+            </div>
+            <div className="h-px bg-border" />
+            <div className="flex justify-between text-base font-bold text-foreground">
+              <span>Total</span>
+              <span className="text-primary stat-number">{fmt(total)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Notes & Terms */}
+        <div className="chart-card space-y-4">
+          <p className="text-sm font-bold text-foreground">Notes & Terms</p>
+          <div>
+            <label className="field-label">Notes <span className="text-muted-foreground font-normal">(optional)</span></label>
+            <textarea
+              className="field-input h-20 resize-none"
+              placeholder="Additional notes for the client..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="field-label">Payment Terms</label>
+            <textarea
+              className="field-input h-16 resize-none"
+              value={terms}
+              onChange={(e) => setTerms(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Payment Methods */}
+        <div className="chart-card space-y-4">
+          <p className="text-sm font-bold text-foreground">Payment Methods</p>
+          <div>
+            <label className="field-label">Payment Link</label>
+            <input
+              className="field-input"
+              value={paymentLink}
+              onChange={(e) => setPaymentLink(e.target.value)}
+              placeholder="https://..."
+            />
+          </div>
+          <div>
+            <label className="field-label">Accepted Methods</label>
+            <div className="flex items-center gap-2 flex-wrap">
+              {["UPI", "Bank", "PayPal", "Card"].map((m) => {
+                const active = methods.includes(m);
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() =>
+                      setMethods((prev) => (active ? prev.filter((item) => item !== m) : [...prev, m]))
+                    }
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                      active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }`}
+                  >
+                    {m}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-2">
+          <button className="btn btn-outline gap-2 flex-1"><Save size={15} /> Save Draft</button>
+          <button className="btn btn-outline gap-2 flex-1"><FileDown size={15} /> PDF</button>
+          <button className="btn btn-primary gap-2 flex-1"><Send size={15} /> Send Invoice</button>
+        </div>
+      </div>
+
+      {/* ── Right: Live Preview ──────────────────────────────── */}
+      <div className="xl:sticky xl:top-24 self-start">
+        <div className="chart-card h-full space-y-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Eye size={16} className="text-primary" />
+            <p className="text-sm font-bold text-foreground">Invoice Preview</p>
+            <span className="badge badge-neutral ml-auto">Live</span>
+          </div>
+
+          {/* Preview Card */}
+          <div className="rounded-xl border border-border bg-background/60 p-6 space-y-5">
+            {/* Brand + Invoice No */}
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-xl font-bold text-foreground">Iteryx</p>
+                <p className="text-xs text-muted-foreground">Freelancer Platform</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Invoice</p>
+                <p className="text-lg font-bold text-primary font-mono">{invoiceNo}</p>
+              </div>
+            </div>
+
+            {/* Client */}
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Bill To</p>
+              <div className="flex items-center gap-2">
+                <User size={14} className="text-muted-foreground" />
+                <p className="text-sm font-semibold text-foreground">{client || "Client Name"}</p>
+              </div>
+              {dueDate && (
+                <p className="text-xs text-muted-foreground mt-1">Due: {dueDate}</p>
+              )}
+            </div>
+
+            {/* Items */}
+            <div className="space-y-1.5">
+              <div className="grid grid-cols-12 gap-2 text-[10px] text-muted-foreground uppercase tracking-wider pb-1 border-b border-border">
+                <span className="col-span-6">Description</span>
+                <span className="col-span-2 text-center">Qty</span>
+                <span className="col-span-2 text-right">Rate</span>
+                <span className="col-span-2 text-right">Total</span>
+              </div>
+              {items.map((item) => (
+                <div key={item.id} className="grid grid-cols-12 gap-2 text-xs">
+                  <span className="col-span-6 text-foreground truncate">{item.description || "—"}</span>
+                  <span className="col-span-2 text-center text-muted-foreground">{item.qty}</span>
+                  <span className="col-span-2 text-right text-muted-foreground">{item.rate ? fmt(item.rate) : "—"}</span>
+                  <span className="col-span-2 text-right font-semibold stat-number">{item.qty && item.rate ? fmt(item.qty * item.rate) : "—"}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Totals */}
+            <div className="space-y-1.5 pt-3 border-t border-border text-xs">
+              <div className="flex justify-between text-muted-foreground">
+                <span>Subtotal</span><span className="stat-number">{fmt(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>GST (18%)</span><span className="stat-number">{fmt(tax)}</span>
+              </div>
+              <div className="flex justify-between text-base font-bold text-foreground pt-1">
+                <span>Total</span>
+                <span className="text-primary stat-number">{fmt(total)}</span>
+              </div>
+            </div>
+
+            {/* Notes */}
+            {(notes || terms) && (
+              <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-border">
+                {notes && <p>{notes}</p>}
+                {terms && <p className="italic">{terms}</p>}
+              </div>
+            )}
+
+            <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-border">
+              <p><span className="text-foreground font-semibold">Payment Link:</span> {paymentLink}</p>
+              <p><span className="text-foreground font-semibold">Methods:</span> {methods.join(", ") || "None selected"}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      </div>
+    </div>
+  );
+}

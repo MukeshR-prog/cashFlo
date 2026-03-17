@@ -13,11 +13,13 @@ const invoiceItemSchema = z.object({
   unitPrice: z.number().nonnegative(),
 });
 
+const isValidDate = (value: string) => !Number.isNaN(new Date(value).getTime());
+
 const createInvoiceSchema = z.object({
-  clientId: z.string().min(1),
+  clientId: z.string().min(1).refine((value) => mongoose.isValidObjectId(value), "Invalid client id"),
   invoiceNumber: z.string().min(1),
-  issueDate: z.string(),
-  dueDate: z.string(),
+  issueDate: z.string().refine(isValidDate, "Invalid issue date"),
+  dueDate: z.string().refine(isValidDate, "Invalid due date"),
   items: z.array(invoiceItemSchema).min(1),
   paymentLink: z.string().optional(),
   notes: z.string().optional(),

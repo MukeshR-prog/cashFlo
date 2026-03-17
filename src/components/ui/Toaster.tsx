@@ -17,7 +17,9 @@ let listeners: Array<(toast: Toast) => void> = [];
 let removeListeners: Array<(id: string) => void> = [];
 
 export function toast(options: Omit<Toast, "id">) {
-  const id = Math.random().toString(36).slice(2);
+  const id = typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   listeners.forEach((fn) => fn({ ...options, id }));
   return id;
 }
@@ -39,17 +41,17 @@ const iconMap = {
 };
 
 const colorMap = {
-  success: "border-l-emerald-500 bg-emerald-50 dark:bg-emerald-950/30",
-  error: "border-l-red-500 bg-red-50 dark:bg-red-950/30",
-  warning: "border-l-amber-500 bg-amber-50 dark:bg-amber-950/30",
-  info: "border-l-blue-500 bg-blue-50 dark:bg-blue-950/30",
+  success: "border-l-success",
+  error: "border-l-destructive",
+  warning: "border-l-warning",
+  info: "border-l-primary",
 };
 
 const iconColorMap = {
-  success: "text-emerald-500",
-  error: "text-red-500",
-  warning: "text-amber-500",
-  info: "text-blue-500",
+  success: "text-success",
+  error: "text-destructive",
+  warning: "text-warning-foreground",
+  info: "text-primary",
 };
 
 function ToastItem({ toast: t, onRemove }: { toast: Toast; onRemove: () => void }) {
@@ -69,8 +71,8 @@ function ToastItem({ toast: t, onRemove }: { toast: Toast; onRemove: () => void 
   return (
     <div
       className={`
-        relative flex items-start gap-3 rounded-xl border border-l-4 border-border p-4
-        shadow-lg backdrop-blur-sm transition-all duration-350
+        relative flex items-start gap-3 rounded-xl border border-l-4 border-border bg-card/95 p-4
+        shadow-md backdrop-blur-sm transition-all duration-350
         ${colorMap[t.type]}
         ${visible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8"}
       `}
@@ -92,6 +94,9 @@ function ToastItem({ toast: t, onRemove }: { toast: Toast; onRemove: () => void 
       >
         <X size={14} />
       </button>
+      <div className="absolute bottom-0 left-0 h-0.5 w-full overflow-hidden rounded-b-xl bg-muted/60">
+        <div className="h-full bg-primary/50 animate-[shrink_4s_linear_forwards]" />
+      </div>
     </div>
   );
 }
