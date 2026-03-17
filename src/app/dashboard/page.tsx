@@ -2,6 +2,8 @@
 
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { KpiCard } from "@/components/ui/KpiCard";
+import { useState, useCallback } from "react";
+import { toast } from "@/components/ui/Toaster";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line,
@@ -119,6 +121,25 @@ export default function DashboardPage() {
 
   const loading = loadingS || loadingC || loadingT;
 
+  // ── Seed demo data ────────────────────────────────────────────────────────
+  const [seeding, setSeeding] = useState(false);
+  const seedData = useCallback(async () => {
+    setSeeding(true);
+    try {
+      const res = await fetch("/api/seed", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Seed failed");
+      toast.success("Demo data loaded!",
+        `${data.seeded.expenses} expenses · ${data.seeded.invoices} invoices · ${data.seeded.clients} clients`);
+      // Reload to see live data
+      setTimeout(() => window.location.reload(), 800);
+    } catch (e) {
+      toast.error("Seeding failed", e instanceof Error ? e.message : "Unknown error");
+    } finally {
+      setSeeding(false);
+    }
+  }, []);
+
   // Format trend for chart — use backend month labels or raw mock
   const spendTrend = (trendData?.trend ?? MOCK_TREND).map((row) => ({
     month: row.month.length === 7
@@ -133,6 +154,24 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* ── Seed demo banner (only when data is empty) ─────── */}
+      {!loading && emptyS && (
+        <div className="rounded-xl border border-primary/20 bg-primary/5 px-5 py-4 flex items-center justify-between gap-4 animate-fade-in">
+          <div>
+            <p className="text-sm font-semibold text-foreground">No data in your account yet</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Load sample data to explore all features including the AI chatbot.
+            </p>
+          </div>
+          <button
+            onClick={seedData}
+            disabled={seeding}
+            className="btn btn-primary btn-sm shrink-0 gap-1.5"
+          >
+            {seeding ? "Seeding…" : "✦ Load demo data"}
+          </button>
+        </div>
+      )}
       {/* ── KPI Row ───────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {loading ? (

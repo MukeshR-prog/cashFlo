@@ -313,7 +313,7 @@ export default function OnboardingPage() {
               <div className="w-16 h-16 rounded-full bg-success/15 flex items-center justify-center mx-auto mb-5">
                 <CheckCircle size={32} className="text-success" />
               </div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">You're all set!</h2>
+              <h2 className="text-2xl font-bold text-foreground mb-2">You&lsquo;re all set!</h2>
               <p className="text-muted-foreground text-sm mb-7 max-w-sm mx-auto">
                 Your account is ready. Head to your dashboard to start tracking expenses and exploring your financial insights.
               </p>
