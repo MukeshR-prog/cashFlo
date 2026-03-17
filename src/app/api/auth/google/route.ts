@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const user = await User.findOneAndUpdate(
       { email: normalizedEmail },
       {
-        $setOnInsert: { email: normalizedEmail },
+        $setOnInsert: { email: normalizedEmail, onboardingCompleted: false, role: null },
         $set: {
           name: normalizedName,
           image: image ?? null,
@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
         email: user.email,
         image: user.image ?? null,
         provider: "google",
+        onboardingCompleted: (user as any).onboardingCompleted ?? false,
+        role: (user as any).role ?? null,
       },
     });
 

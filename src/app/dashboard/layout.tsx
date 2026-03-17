@@ -1,0 +1,44 @@
+"use client";
+
+import { useState } from "react";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { Header } from "@/components/layout/Header";
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  return (
+    <div className="flex h-screen w-full overflow-hidden bg-background">
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:flex">
+        <Sidebar />
+      </div>
+
+      {/* Mobile Drawer */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div
+            className="absolute inset-0 bg-foreground/30 backdrop-blur-sm animate-fade-in"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <div className="absolute left-0 top-0 h-full animate-slide-in-left">
+            <Sidebar />
+          </div>
+        </div>
+      )}
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <Header
+          onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
+          mobileMenuOpen={mobileMenuOpen}
+        />
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-screen-xl p-4 sm:p-6 lg:p-8 animate-fade-up">
+            {children}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}

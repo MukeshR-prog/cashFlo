@@ -31,6 +31,8 @@ export async function POST(req: NextRequest) {
       email: normalizedEmail,
       password: hashed,
       provider: "credentials",
+      onboardingCompleted: false,
+      role: null,
     });
 
     const { sessionToken, sessionExpiresAt } = await createSessionForUser(user.id);
@@ -43,6 +45,8 @@ export async function POST(req: NextRequest) {
           email: user.email,
           image: user.image ?? null,
           provider: "credentials",
+          onboardingCompleted: user.onboardingCompleted ?? false,
+          role: user.role ?? null,
         },
       },
       { status: 201 }

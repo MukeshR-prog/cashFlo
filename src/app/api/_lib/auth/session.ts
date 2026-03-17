@@ -92,5 +92,8 @@ export async function getSessionUser(token?: string | null) {
     email: user.email,
     image: user.image ?? null,
     provider: user.provider,
+    role: (user as any).role ?? null,
+    onboardingCompleted: (user as any).onboardingCompleted ?? false,
+    profile: (user as any).profile ?? null,
   };
 }

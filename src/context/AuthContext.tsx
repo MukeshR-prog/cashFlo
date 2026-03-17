@@ -186,7 +186,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setUser(data.user);
-    router.push("/");
+    const needsOnboarding = data.user?.onboardingCompleted === false || data.user?.onboardingCompleted === undefined;
+    if (needsOnboarding) {
+      router.push("/onboarding");
+    } else {
+      router.push("/");
+    }
   };
 
   const logout = async () => {
