@@ -30,7 +30,6 @@ export default function PlanningPage() {
         setLoading(false);
       }
     }
-
     loadData();
   }, [user]);
 
@@ -38,112 +37,245 @@ export default function PlanningPage() {
     const avgBurnPerHire = assumptions.find((a) => a.label.includes("Fully Loaded"))?.value || 11000;
     const burnDelta = newHires * avgBurnPerHire;
     const delayPenalty = fundraiseDelayMonths * 0.35;
-
     const latest = runway[runway.length - 1]?.baseRunway || 6;
     const adjustedRunway = Math.max(latest - burnDelta / 100000 - delayPenalty, 0);
-
     return { burnDelta, adjustedRunway };
   }, [assumptions, fundraiseDelayMonths, newHires, runway]);
 
   if (loading) {
-    return <div className="animate-pulse">Loading forecasting model...</div>;
+    return (
+      <div className="space-y-4 animate-pulse">
+        {[1, 2].map((i) => (
+          <div key={i} className="h-48 rounded-xl skeleton" />
+        ))}
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h2 className="text-2xl font-display font-bold text-white">Scenario Planning & Budget Engine</h2>
-        <p className="text-sm text-neutral-400">Stress-test hiring and fundraising assumptions before committing cash.</p>
+      {/* Header */}
+      <div className="animate-fade-up">
+        <h2 className="text-2xl font-bold text-foreground">Scenario Planning & Budget Engine</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Stress-test hiring and fundraising assumptions before committing cash.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="bg-neutral-900 border-neutral-800 lg:col-span-2">
+        {/* Chart */}
+        <Card className="border-border lg:col-span-2 animate-fade-up delay-100" id="runway-projection-chart">
           <CardHeader>
-            <CardTitle className="text-white">12-Month Runway Projection</CardTitle>
-            <CardDescription className="text-neutral-400">Base, stress, and growth scenarios update from your planning assumptions.</CardDescription>
+            <CardTitle className="text-lg font-bold">12-Month Runway Projection</CardTitle>
+            <CardDescription>
+              Base, stress, and growth scenarios update from your planning assumptions.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[320px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={runway}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
-                  <XAxis dataKey="month" stroke="#737373" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#737373" fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={{ backgroundColor: "#171717", borderColor: "#262626", color: "#fff" }} />
-                  <Legend />
-                  <Line type="monotone" dataKey="baseRunway" stroke="#60a5fa" strokeWidth={2} dot={false} name="Base" />
-                  <Line type="monotone" dataKey="stressRunway" stroke="#f59e0b" strokeWidth={2} dot={false} name="Stress" />
-                  <Line type="monotone" dataKey="growthRunway" stroke="#34d399" strokeWidth={2} dot={false} name="Growth" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "8px",
+                      color: "var(--foreground)",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Legend
+                    wrapperStyle={{ fontSize: "12px", color: "var(--muted-foreground)" }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="baseRunway"
+                    stroke="var(--chart-1)"
+                    strokeWidth={2.5}
+                    dot={false}
+                    name="Base"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="stressRunway"
+                    stroke="var(--warning)"
+                    strokeWidth={2.5}
+                    dot={false}
+                    name="Stress"
+                    strokeDasharray="6 3"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="growthRunway"
+                    stroke="var(--success)"
+                    strokeWidth={2.5}
+                    dot={false}
+                    name="Growth"
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-neutral-900 border-neutral-800">
+        {/* What-If Controls */}
+        <Card className="border-border animate-fade-up delay-200" id="what-if-controls">
           <CardHeader>
-            <CardTitle className="text-white">What-If Controls</CardTitle>
-            <CardDescription className="text-neutral-400">Rapidly model key decisions.</CardDescription>
+            <CardTitle className="text-lg font-bold">What-If Controls</CardTitle>
+            <CardDescription>Rapidly model key decisions.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-5">
+          <CardContent className="space-y-6">
+            {/* New Hires Slider */}
             <div>
-              <label className="text-xs uppercase tracking-wide text-neutral-500">Planned New Hires</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Planned New Hires
+                </label>
+                <span
+                  className="text-xs font-bold px-2 py-0.5 rounded-full"
+                  style={{
+                    background: "color-mix(in oklch, var(--primary) 12%, transparent)",
+                    color: "var(--primary)",
+                  }}
+                >
+                  {newHires}
+                </span>
+              </div>
               <input
+                id="new-hires-slider"
                 type="range"
                 min={0}
                 max={8}
                 value={newHires}
                 onChange={(e) => setNewHires(Number(e.target.value))}
-                className="w-full mt-2"
+                className="w-full mt-1 accent-primary cursor-pointer"
+                style={{ accentColor: "var(--primary)" }}
               />
-              <p className="text-sm text-neutral-300 mt-2">{newHires} hires</p>
+              <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                <span>0</span><span>4</span><span>8</span>
+              </div>
             </div>
 
+            {/* Fundraise Delay */}
             <div>
-              <label className="text-xs uppercase tracking-wide text-neutral-500">Fundraise Delay (Months)</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Fundraise Delay
+                </label>
+                <span
+                  className="text-xs font-bold px-2 py-0.5 rounded-full"
+                  style={{
+                    background: "color-mix(in oklch, var(--warning) 12%, transparent)",
+                    color: "var(--warning)",
+                  }}
+                >
+                  {fundraiseDelayMonths} mo
+                </span>
+              </div>
               <input
+                id="fundraise-delay-slider"
                 type="range"
                 min={0}
                 max={6}
                 value={fundraiseDelayMonths}
                 onChange={(e) => setFundraiseDelayMonths(Number(e.target.value))}
-                className="w-full mt-2"
+                className="w-full mt-1 cursor-pointer"
+                style={{ accentColor: "var(--warning)" }}
               />
-              <p className="text-sm text-neutral-300 mt-2">{fundraiseDelayMonths} months</p>
+              <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                <span>0 mo</span><span>3 mo</span><span>6 mo</span>
+              </div>
             </div>
 
-            <div className="rounded-lg border border-neutral-800 bg-neutral-950 p-4">
-              <div className="flex items-center gap-2 mb-2 text-neutral-300 text-sm font-medium">
-                <Calculator size={14} className="text-indigo-400" />
-                Modeled Impact
+            {/* Modeled Impact */}
+            <div
+              className="rounded-xl border p-4 space-y-2"
+              style={{
+                background: "color-mix(in oklch, var(--primary) 5%, var(--card))",
+                borderColor: "color-mix(in oklch, var(--primary) 20%, transparent)",
+              }}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <Calculator size={14} style={{ color: "var(--primary)" }} />
+                <span className="text-sm font-semibold text-foreground">Modeled Impact</span>
               </div>
-              <p className="text-sm text-neutral-400">Incremental burn: <span className="text-red-400">${modeledImpact.burnDelta.toLocaleString()}/month</span></p>
-              <p className="text-sm text-neutral-400">Estimated runway post-change: <span className="text-emerald-400">{modeledImpact.adjustedRunway.toFixed(1)} months</span></p>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Additional burn/month</span>
+                <span className="text-xs font-bold" style={{ color: "var(--destructive)" }}>
+                  ${modeledImpact.burnDelta.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Adjusted runway</span>
+                <span className="text-xs font-bold" style={{ color: "var(--success)" }}>
+                  {modeledImpact.adjustedRunway.toFixed(1)} months
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Mini Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <MiniCard title="Budget Assumptions" value={`${assumptions.length}`} caption="Driver variables tracked" icon={<Target size={16} className="text-blue-400" />} />
-        <MiniCard title="Decision Velocity" value="< 5 mins" caption="To run a forecast test" icon={<ArrowRightLeft size={16} className="text-amber-400" />} />
-        <MiniCard title="Founder Guidance" value="AI-assisted" caption="Narrative explanation layer" icon={<Lightbulb size={16} className="text-emerald-400" />} />
+        {[
+          {
+            title: "Budget Assumptions",
+            value: `${assumptions.length}`,
+            caption: "Driver variables tracked",
+            icon: Target,
+            color: "var(--chart-1)",
+            id: "budget-assumptions-card",
+          },
+          {
+            title: "Decision Velocity",
+            value: "< 5 mins",
+            caption: "To run a forecast test",
+            icon: ArrowRightLeft,
+            color: "var(--warning)",
+            id: "decision-velocity-card",
+          },
+          {
+            title: "Founder Guidance",
+            value: "AI-assisted",
+            caption: "Narrative explanation layer",
+            icon: Lightbulb,
+            color: "var(--success)",
+            id: "founder-guidance-card",
+          },
+        ].map((card, idx) => (
+          <div
+            key={card.id}
+            id={card.id}
+            className="kpi-card animate-fade-up"
+            style={{ animationDelay: `${idx * 80}ms` }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <p className="kpi-label">{card.title}</p>
+              <div
+                className="p-2 rounded-lg"
+                style={{ background: `color-mix(in oklch, ${card.color} 12%, transparent)` }}
+              >
+                <card.icon size={14} style={{ color: card.color }} />
+              </div>
+            </div>
+            <p className="kpi-value text-xl mb-1">{card.value}</p>
+            <p className="text-xs text-muted-foreground">{card.caption}</p>
+          </div>
+        ))}
       </div>
     </div>
-  );
-}
-
-function MiniCard({ title, value, caption, icon }: { title: string; value: string; caption: string; icon: React.ReactNode }) {
-  return (
-    <Card className="bg-neutral-900 border-neutral-800">
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-sm text-neutral-400">{title}</p>
-          {icon}
-        </div>
-        <p className="text-2xl font-bold text-white">{value}</p>
-        <p className="text-xs text-neutral-500">{caption}</p>
-      </CardContent>
-    </Card>
   );
 }
