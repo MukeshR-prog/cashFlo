@@ -77,33 +77,33 @@ export interface ComplianceAlert {
 
 // 1. Mock Key Metrics
 export const mockMetrics = {
-  totalCash: 854000,
-  monthlyBurn: 125000,
+  totalCash: 86500000,
+  monthlyBurn: 12800000,
   predictedRunwayMonths: 6.8,
-  uncollectedAR: 320000,
+  uncollectedAR: 32900000,
   runwayZeroDate: '2026-10-15',
 };
 
 // 2. Mock 13-Week Cash Flow Predictor Data
-// Demonstrating the "temporal cash flow trap" where payroll + VAT hits before a massive invoice is paid.
+// Demonstrating the "temporal cash flow trap" where payroll + GST + vendor renewals hit before collections clear.
 export const mockCashFlow: CashFlowDay[] = [
-  { date: '2026-03-20', startingBalance: 854000, inflow: 0, outflow: 15000, endingBalance: 839000, hasCriticalEvent: false },
-  { date: '2026-03-27', startingBalance: 839000, inflow: 10000, outflow: 75000, endingBalance: 774000, hasCriticalEvent: true, criticalEventName: 'Global Payroll' },
-  { date: '2026-04-03', startingBalance: 774000, inflow: 0, outflow: 25000, endingBalance: 749000, hasCriticalEvent: false },
-  { date: '2026-04-10', startingBalance: 749000, inflow: 0, outflow: 120000, endingBalance: 629000, hasCriticalEvent: true, criticalEventName: 'AWS + VAT Remittance' },
-  { date: '2026-04-17', startingBalance: 629000, inflow: 0, outflow: 75000, endingBalance: 554000, hasCriticalEvent: true, criticalEventName: 'Global Payroll' },
-  { date: '2026-04-24', startingBalance: 554000, inflow: 0, outflow: 20000, endingBalance: 534000, hasCriticalEvent: false },
-  // Danger zone: massive AR needed here
-  { date: '2026-05-01', startingBalance: 534000, inflow: 250000, outflow: 30000, endingBalance: 754000, hasCriticalEvent: true, criticalEventName: 'Enterprise Client Payment Expected' },
-  { date: '2026-05-08', startingBalance: 754000, inflow: 0, outflow: 75000, endingBalance: 679000, hasCriticalEvent: true, criticalEventName: 'Global Payroll' },
+  { date: '2026-03-20', startingBalance: 86500000, inflow: 0, outflow: 2100000, endingBalance: 84400000, hasCriticalEvent: false },
+  { date: '2026-03-27', startingBalance: 84400000, inflow: 2500000, outflow: 9800000, endingBalance: 77100000, hasCriticalEvent: true, criticalEventName: 'Payroll + EPF + ESIC' },
+  { date: '2026-04-03', startingBalance: 77100000, inflow: 900000, outflow: 3200000, endingBalance: 74800000, hasCriticalEvent: false },
+  { date: '2026-04-10', startingBalance: 74800000, inflow: 0, outflow: 14200000, endingBalance: 60600000, hasCriticalEvent: true, criticalEventName: 'GST + AWS + SaaS Renewals' },
+  { date: '2026-04-17', startingBalance: 60600000, inflow: 1200000, outflow: 9900000, endingBalance: 51900000, hasCriticalEvent: true, criticalEventName: 'Payroll Cycle' },
+  { date: '2026-04-24', startingBalance: 51900000, inflow: 800000, outflow: 4100000, endingBalance: 48600000, hasCriticalEvent: false },
+  // Danger zone: delayed enterprise AR can compress runway quickly
+  { date: '2026-05-01', startingBalance: 48600000, inflow: 21500000, outflow: 4800000, endingBalance: 65300000, hasCriticalEvent: true, criticalEventName: 'Enterprise Collection Expected' },
+  { date: '2026-05-08', startingBalance: 65300000, inflow: 600000, outflow: 9700000, endingBalance: 56200000, hasCriticalEvent: true, criticalEventName: 'Payroll + Vendor Settlements' },
 ];
 
 // 3. Mock Accounts Receivable (Delayed Payments)
 export const mockInvoices: Invoice[] = [
-  { id: 'INV-1042', client: 'Acme Corp', amount: 120000, issueDate: '2026-01-15', dueDate: '2026-03-15', status: 'overdue' },
-  { id: 'INV-1043', client: 'Globex Inc', amount: 85000, issueDate: '2026-02-01', dueDate: '2026-04-01', status: 'pending' },
-  { id: 'INV-1044', client: 'Initech', amount: 45000, issueDate: '2026-02-15', dueDate: '2026-04-15', status: 'pending' },
-  { id: 'INV-1045', client: 'Stark Ind', amount: 70000, issueDate: '2025-12-01', dueDate: '2026-01-31', status: 'overdue' },
+  { id: 'INV-IND-2042', client: 'Reliance Retail Digital', amount: 14600000, issueDate: '2026-01-15', dueDate: '2026-03-15', status: 'overdue' },
+  { id: 'INV-IND-2043', client: 'Tata 1mg Marketplace', amount: 9200000, issueDate: '2026-02-01', dueDate: '2026-04-01', status: 'pending' },
+  { id: 'INV-IND-2044', client: 'Delhivery Enterprise', amount: 5100000, issueDate: '2026-02-15', dueDate: '2026-04-15', status: 'pending' },
+  { id: 'INV-IND-2045', client: 'Lenskart Tech Ops', amount: 4000000, issueDate: '2025-12-01', dueDate: '2026-01-31', status: 'overdue' },
 ];
 
 // 4. Mock AI Alerts
@@ -112,41 +112,41 @@ export const mockAlerts: AnomalyAlert[] = [
     id: 'ALT-01',
     severity: 'critical',
     title: 'Liquidity Trap Detected',
-    description: 'If Acme Corp ($120k) pays Net-90 instead of Net-60, you will miss the May 8th payroll cycle by $14,000.',
+    description: 'If Reliance Retail Digital (₹1.46 crore) slips from Net-45 to Net-75, you may miss the next payroll cycle by approximately ₹18 lakh.',
     date: '2026-03-16',
   },
   {
     id: 'ALT-02',
     severity: 'high',
     title: 'Spend Drift: Cloud Infrastructure',
-    description: 'AWS Lambda costs are drifting 18% above the 3-month trailing average. Projected $12k overrun this month.',
+    description: 'Cloud and observability spend is running 17% above the trailing 3-month average. Projected overrun: ₹9.5 lakh this month.',
     date: '2026-03-15',
   },
   {
     id: 'ALT-03',
     severity: 'medium',
     title: 'Accounting Methodology Mismatch',
-    description: 'You recorded a $120k upfront booking today, but accrual revenue recognition is only $10k/month. Do not mistake cash for profitability.',
+    description: 'You recorded an upfront booking of ₹80 lakh, while accrual recognition is ₹8 lakh/month. Avoid treating collections as profit.',
     date: '2026-03-14',
   },
 ];
 
 // 5. Mock Revenue Data (Cash vs Accrual)
 export const mockRevenueData = [
-  { month: 'Jan', cashBookings: 250000, accrualRevenue: 40000 },
-  { month: 'Feb', cashBookings: 15000, accrualRevenue: 60000 },
-  { month: 'Mar', cashBookings: 10000, accrualRevenue: 65000 },
-  { month: 'Apr', cashBookings: 120000, accrualRevenue: 75000 },
-  { month: 'May', cashBookings: 5000, accrualRevenue: 80000 },
-  { month: 'Jun', cashBookings: 200000, accrualRevenue: 95000 },
+  { month: 'Jan', cashBookings: 18200000, accrualRevenue: 11800000 },
+  { month: 'Feb', cashBookings: 5400000, accrualRevenue: 12400000 },
+  { month: 'Mar', cashBookings: 7600000, accrualRevenue: 13100000 },
+  { month: 'Apr', cashBookings: 21500000, accrualRevenue: 13900000 },
+  { month: 'May', cashBookings: 6800000, accrualRevenue: 14700000 },
+  { month: 'Jun', cashBookings: 24800000, accrualRevenue: 15600000 },
 ];
 
 // 6. Mock Scenario Planning Inputs
 export const mockScenarioAssumptions: ScenarioAssumption[] = [
-  { id: 'SCN-1', label: 'Monthly New MRR', value: 22000, type: 'currency' },
+  { id: 'SCN-1', label: 'Monthly New MRR (India)', value: 2200000, type: 'currency' },
   { id: 'SCN-2', label: 'Monthly Churn', value: 3.2, type: 'percent' },
-  { id: 'SCN-3', label: 'Planned Hires (Next 2Q)', value: 3, type: 'count' },
-  { id: 'SCN-4', label: 'Average Fully Loaded Cost / Hire', value: 11800, type: 'currency' },
+  { id: 'SCN-3', label: 'Planned Hires (Next 2Q)', value: 6, type: 'count' },
+  { id: 'SCN-4', label: 'Average Fully Loaded Cost / Hire (India)', value: 185000, type: 'currency' },
 ];
 
 export const mockScenarioRunway: ScenarioPoint[] = [
@@ -168,9 +168,9 @@ export const mockCapTable: CapTableMember[] = [
 ];
 
 export const mockDilutionScenario: DilutionScenario = {
-  roundName: 'Seed Extension - Proposed',
-  preMoney: 12000000,
-  raiseAmount: 3000000,
+  roundName: 'Pre-Series A - Proposed',
+  preMoney: 720000000,
+  raiseAmount: 180000000,
   optionPoolTopUpPct: 3,
   founderOwnershipBeforePct: 80,
   founderOwnershipAfterPct: 64.5,
@@ -180,38 +180,38 @@ export const mockDilutionScenario: DilutionScenario = {
 export const mockComplianceAlerts: ComplianceAlert[] = [
   {
     id: 'CMP-1',
-    title: 'Delaware Franchise Tax',
-    dueDate: '2026-03-31',
-    jurisdiction: 'US - Delaware',
+    title: 'Advance Tax (Q4) - FY 2025-26',
+    dueDate: '2026-03-15',
+    jurisdiction: 'India - Income Tax',
     category: 'tax',
     severity: 'critical',
-    description: 'Estimated payment + annual report filing window closes this month.',
+    description: 'Final installment for advance tax should be reconciled with projected PBT to avoid interest under sections 234B/234C.',
   },
   {
     id: 'CMP-2',
-    title: 'UK VAT Return (Q1)',
-    dueDate: '2026-04-07',
-    jurisdiction: 'UK',
+    title: 'GSTR-3B + GSTR-1 Filing',
+    dueDate: '2026-04-20',
+    jurisdiction: 'India - GST',
     category: 'filing',
     severity: 'urgent',
-    description: 'Late filing may trigger penalties and interest charges.',
+    description: 'Monthly GST liability and invoice-wise outward supplies must match books and e-invoice records.',
   },
   {
     id: 'CMP-3',
-    title: 'Global Payroll Tax Remittance',
-    dueDate: '2026-03-28',
-    jurisdiction: 'US + EU',
+    title: 'TDS Deposit + Payroll Challans',
+    dueDate: '2026-04-07',
+    jurisdiction: 'India - TDS / Payroll',
     category: 'payroll',
     severity: 'urgent',
-    description: 'Confirm local withholding obligations before payroll close.',
+    description: 'Deposit monthly TDS and reconcile payroll deductions including EPF and ESIC before due date.',
   },
   {
     id: 'CMP-4',
-    title: 'R&D Tax Credit Evidence Checkpoint',
+    title: 'DPIIT Startup Recognition Evidence Review',
     dueDate: '2026-04-15',
-    jurisdiction: 'US Federal',
+    jurisdiction: 'India - DPIIT / MCA',
     category: 'r&d',
     severity: 'upcoming',
-    description: 'Tag engineering labor and cloud spend to eligible project codes.',
+    description: 'Tag product engineering payroll and cloud usage with project codes for audit-ready innovation claims.',
   },
 ];

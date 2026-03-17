@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { AnomalyAlert } from "@/lib/mock-data";
+import { formatINR } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -86,7 +87,7 @@ export default function CopilotPage() {
             </CardHeader>
             <CardContent className="space-y-2">
               <button className="w-full text-left p-3 rounded-md bg-neutral-950 border border-neutral-800 text-sm text-neutral-300 hover:border-indigo-500/50 hover:bg-neutral-800 transition-colors">
-                What is our zero cash date if we hire 3 engineers at $120k next month?
+                What is our zero cash date if we hire 6 engineers at ₹1.85 lakh/month next quarter?
               </button>
               <button className="w-full text-left p-3 rounded-md bg-neutral-950 border border-neutral-800 text-sm text-neutral-300 hover:border-indigo-500/50 hover:bg-neutral-800 transition-colors">
                 Which vendors are increasing prices faster than our MRR growth?
@@ -111,7 +112,7 @@ export default function CopilotPage() {
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-neutral-500">Burn Rate</span>
-                <span className="text-white">${metrics.monthlyBurn.toLocaleString()}/mo</span>
+                <span className="text-white">{formatINR(metrics.monthlyBurn)}/mo</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-neutral-500">Active Anomalies</span>

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { CapTableMember, DilutionScenario } from "@/lib/mock-data";
+import { formatINR } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BadgePercent, ShieldCheck } from "lucide-react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
@@ -103,9 +104,9 @@ export default function CapTablePage() {
           <CardContent className="space-y-4">
             <div className="rounded-lg bg-neutral-950 border border-neutral-800 p-4 space-y-2">
               <p className="text-sm text-neutral-400">Pre-money valuation</p>
-              <p className="text-xl text-white font-bold">${dilution?.preMoney?.toLocaleString() || 0}</p>
+              <p className="text-xl text-white font-bold">{formatINR(dilution?.preMoney || 0)}</p>
               <p className="text-sm text-neutral-400">Raise amount</p>
-              <p className="text-xl text-white font-bold">${dilution?.raiseAmount?.toLocaleString() || 0}</p>
+              <p className="text-xl text-white font-bold">{formatINR(dilution?.raiseAmount || 0)}</p>
             </div>
 
             <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4">

@@ -233,10 +233,10 @@ export default function LandingPage() {
                 {/* Mini KPI grid */}
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: "Cash Balance", value: "$2.14M", color: "var(--chart-1)", up: true },
-                    { label: "Monthly Burn", value: "$312K", color: "var(--destructive)", up: false },
-                    { label: "MRR", value: "$89K", color: "var(--success)", up: true },
-                    { label: "Overdue AR", value: "$143K", color: "var(--warning)", up: false },
+                    { label: "Cash Balance", value: "₹17.8 Cr", color: "var(--chart-1)", up: true },
+                    { label: "Monthly Burn", value: "₹31.2 L", color: "var(--destructive)", up: false },
+                    { label: "MRR", value: "₹8.9 L", color: "var(--success)", up: true },
+                    { label: "Overdue AR", value: "₹14.3 L", color: "var(--warning)", up: false },
                   ].map((kpi) => (
                     <div
                       key={kpi.label}

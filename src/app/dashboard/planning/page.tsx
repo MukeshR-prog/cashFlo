@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { ScenarioAssumption, ScenarioPoint } from "@/lib/mock-data";
+import { formatINR } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRightLeft, Calculator, Lightbulb, Target } from "lucide-react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
@@ -227,7 +228,7 @@ export default function PlanningPage() {
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">Additional burn/month</span>
                 <span className="text-xs font-bold" style={{ color: "var(--destructive)" }}>
-                  ${modeledImpact.burnDelta.toLocaleString()}
+                  {formatINR(modeledImpact.burnDelta)}
                 </span>
               </div>
               <div className="flex items-center justify-between">

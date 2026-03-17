@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { CashFlowDay } from "@/lib/mock-data";
+import { formatINR, formatINRCompact } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, CalendarClock, TrendingDown, Wallet } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -75,10 +76,10 @@ export default function CashflowPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard title="Opening Cash" value={`$${metrics?.totalCash?.toLocaleString() || 0}`} detail="Real-time treasury snapshot" icon={<Wallet className="text-emerald-400" size={18} />} />
-        <SummaryCard title="Forecast Inflow" value={`$${overview.totalInflow.toLocaleString()}`} detail="Expected receipts this cycle" icon={<TrendingDown className="text-blue-400" size={18} />} />
-        <SummaryCard title="Forecast Outflow" value={`$${overview.totalOutflow.toLocaleString()}`} detail="Non-negotiable obligations" icon={<CalendarClock className="text-red-400" size={18} />} />
-        <SummaryCard title="Critical Weeks" value={`${overview.criticalWeeks}`} detail={`Min balance $${overview.minBalance.toLocaleString()}`} icon={<AlertTriangle className="text-amber-400" size={18} />} />
+        <SummaryCard title="Opening Cash" value={formatINR(metrics?.totalCash || 0)} detail="Real-time treasury snapshot" icon={<Wallet className="text-emerald-400" size={18} />} />
+        <SummaryCard title="Forecast Inflow" value={formatINR(overview.totalInflow)} detail="Expected receipts this cycle" icon={<TrendingDown className="text-blue-400" size={18} />} />
+        <SummaryCard title="Forecast Outflow" value={formatINR(overview.totalOutflow)} detail="Non-negotiable obligations" icon={<CalendarClock className="text-red-400" size={18} />} />
+        <SummaryCard title="Critical Weeks" value={`${overview.criticalWeeks}`} detail={`Min balance ${formatINR(overview.minBalance)}`} icon={<AlertTriangle className="text-amber-400" size={18} />} />
       </div>
 
       <Card className="bg-neutral-900 border-neutral-800">
@@ -92,10 +93,10 @@ export default function CashflowPage() {
               <BarChart data={rows}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
                 <XAxis dataKey="date" stroke="#737373" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#737373" fontSize={12} tickFormatter={(value) => `$${Math.round(value / 1000)}k`} tickLine={false} axisLine={false} />
+                <YAxis stroke="#737373" fontSize={12} tickFormatter={(value) => formatINRCompact(Number(value))} tickLine={false} axisLine={false} />
                 <Tooltip
                   contentStyle={{ backgroundColor: "#171717", borderColor: "#262626", color: "#fff" }}
-                  formatter={(value) => `$${Number(value ?? 0).toLocaleString()}`}
+                  formatter={(value) => formatINR(Number(value ?? 0))}
                 />
                 <Bar dataKey="inflow" fill="#22c55e" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="outflow" fill="#ef4444" radius={[4, 4, 0, 0]} />
@@ -125,12 +126,12 @@ export default function CashflowPage() {
               </thead>
               <tbody>
                 {rows.map((row, idx) => (
-                  <tr key={idx} className={`border-b border-neutral-800/50 ${row.endingBalance < 600000 ? "bg-red-950/20" : "hover:bg-neutral-800/20"}`}>
+                  <tr key={idx} className={`border-b border-neutral-800/50 ${row.endingBalance < 60000000 ? "bg-red-950/20" : "hover:bg-neutral-800/20"}`}>
                     <td className="px-4 py-3 text-neutral-300">{row.date}</td>
-                    <td className="px-4 py-3 text-neutral-400">${row.startingBalance.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-emerald-400">{row.inflow ? `+$${row.inflow.toLocaleString()}` : "-"}</td>
-                    <td className="px-4 py-3 text-red-400">-${row.outflow.toLocaleString()}</td>
-                    <td className={`px-4 py-3 font-semibold ${row.endingBalance < 600000 ? "text-red-400" : "text-white"}`}>${row.endingBalance.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-neutral-400">{formatINR(row.startingBalance)}</td>
+                    <td className="px-4 py-3 text-emerald-400">{row.inflow ? `+${formatINR(row.inflow)}` : "-"}</td>
+                    <td className="px-4 py-3 text-red-400">{formatINR(-row.outflow)}</td>
+                    <td className={`px-4 py-3 font-semibold ${row.endingBalance < 60000000 ? "text-red-400" : "text-white"}`}>{formatINR(row.endingBalance)}</td>
                     <td className="px-4 py-3 text-neutral-400">{row.criticalEventName || "-"}</td>
                   </tr>
                 ))}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Invoice } from "@/lib/mock-data";
+import { formatINR } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AlertCircle, FileText, Send, Database, CheckCircle2, Loader2 } from "lucide-react";
 
@@ -111,7 +112,7 @@ export default function ReceivablesPage() {
         <Card className="bg-neutral-900 border-neutral-800">
           <CardContent className="p-6">
             <p className="text-sm font-medium text-neutral-400 mb-1">Total Outstanding (MRR Illusion)</p>
-            <h3 className="text-3xl font-bold text-white mb-2">${totalUncollected.toLocaleString()}</h3>
+            <h3 className="text-3xl font-bold text-white mb-2">{formatINR(totalUncollected)}</h3>
             <p className="text-xs text-neutral-500">Contracted, but acting as an unsecured loan to clients.</p>
           </CardContent>
         </Card>
@@ -122,7 +123,7 @@ export default function ReceivablesPage() {
               <AlertCircle size={16} />
               Severely Overdue
             </p>
-            <h3 className="text-3xl font-bold text-red-400 mb-2">${totalOverdue.toLocaleString()}</h3>
+            <h3 className="text-3xl font-bold text-red-400 mb-2">{formatINR(totalOverdue)}</h3>
             <p className="text-xs text-red-500/80">Immediate runway impact. Requires immediate escalation.</p>
           </CardContent>
         </Card>
@@ -166,7 +167,7 @@ export default function ReceivablesPage() {
                     <td className="px-4 py-4 text-white font-medium">{invoice.client}</td>
                     <td className="px-4 py-4 text-neutral-400">{invoice.issueDate}</td>
                     <td className="px-4 py-4 text-neutral-400">{invoice.dueDate}</td>
-                    <td className="px-4 py-4 text-white font-medium text-right">${invoice.amount.toLocaleString()}</td>
+                    <td className="px-4 py-4 text-white font-medium text-right">{formatINR(invoice.amount)}</td>
                     <td className="px-4 py-4 text-center">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
                         invoice.status === 'overdue' 
