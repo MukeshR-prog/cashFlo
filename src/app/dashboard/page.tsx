@@ -1,32 +1,72 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
+  AlertTriangle,
+  ArrowUpRight,
+  Bot,
+  CircleDollarSign,
+  Flame,
+  Gauge,
+  Sparkles,
+} from "lucide-react";
+
 import { useAuth } from "@/context/AuthContext";
+import { CashFlowDay, Invoice, AnomalyAlert } from "@/lib/mock-data";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
-const priorities = [
-  { title: "Finalize onboarding copy", owner: "Design", state: "Today" },
-  { title: "Review auth env setup", owner: "Engineering", state: "High impact" },
-  { title: "Plan sprint demo", owner: "Product", state: "Tomorrow" },
-];
+type DashboardMetrics = {
+  totalCash: number;
+  monthlyBurn: number;
+  predictedRunwayMonths: number;
+  uncollectedAR: number;
+  runwayZeroDate: string;
+};
 
-const metrics = [
-  { label: "Milestones", value: "08", detail: "3 due this week" },
-  { label: "Open tasks", value: "21", detail: "7 awaiting review" },
-  { label: "Team members", value: "06", detail: "2 external collaborators" },
-  { label: "Release health", value: "92%", detail: "No blockers reported" },
-];
+async function getDashboardData<T>(userId: string, type: string): Promise<T> {
+  const response = await fetch(
+    `/api/dashboard-data?userId=${encodeURIComponent(userId)}&type=${encodeURIComponent(type)}`,
+    { cache: "no-store" }
+  );
 
-const activity = [
-  "Auth session flow updated to remove JWT cookies.",
-  "Landing and auth pages replaced with cleaner templates.",
-  "Dashboard now reads the same session state as the API.",
-  "Firebase configuration moved out of source code into env vars.",
-];
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error ?? "Failed to load dashboard data");
+  }
+
+  return payload.data as T;
+}
+
+const pieColors = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)"];
 
 export default function DashboardPage() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
+
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [cashflow, setCashflow] = useState<CashFlowDay[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [alerts, setAlerts] = useState<AnomalyAlert[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -34,137 +74,321 @@ export default function DashboardPage() {
     }
   }, [user, loading, router]);
 
-  if (loading || !user) {
+  useEffect(() => {
+    async function loadData() {
+      if (!user?.id) return;
+      try {
+        const [m, c, i, a] = await Promise.all([
+          getDashboardData<DashboardMetrics>(user.id, "metrics"),
+          getDashboardData<CashFlowDay[]>(user.id, "cashflow"),
+          getDashboardData<Invoice[]>(user.id, "invoices"),
+          getDashboardData<AnomalyAlert[]>(user.id, "alerts"),
+        ]);
+        setMetrics(m);
+        setCashflow(c);
+        setInvoices(i);
+        setAlerts(a);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    void loadData();
+  }, [user]);
+
+  const derived = useMemo(() => {
+    const inflowTotal = cashflow.reduce((sum, row) => sum + row.inflow, 0);
+    const outflowTotal = cashflow.reduce((sum, row) => sum + row.outflow, 0);
+    const overdue = invoices.filter((inv) => inv.status === "overdue");
+    const pending = invoices.filter((inv) => inv.status === "pending");
+
+    const collectionsData = [
+      { label: "Overdue", value: overdue.reduce((sum, inv) => sum + inv.amount, 0) },
+      { label: "Pending", value: pending.reduce((sum, inv) => sum + inv.amount, 0) },
+      { label: "Paid", value: invoices.filter((inv) => inv.status === "paid").reduce((sum, inv) => sum + inv.amount, 0) },
+    ];
+
+    const netCash = inflowTotal - outflowTotal;
+    const runwayHealth = metrics ? Math.min((metrics.predictedRunwayMonths / 12) * 100, 100) : 0;
+
+    return {
+      inflowTotal,
+      outflowTotal,
+      netCash,
+      collectionsData,
+      overdueCount: overdue.length,
+      alertCount: alerts.length,
+      runwayHealth,
+    };
+  }, [cashflow, invoices, alerts, metrics]);
+
+  if (loading || isLoading || !metrics) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-background via-card to-background flex items-center justify-center">
-        <div className="card text-center">
-          <div className="w-10 h-10 rounded-full border-4 border-border border-t-accent animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading your workspace...</p>
+      <div className="space-y-4">
+        <Skeleton className="h-16 w-full rounded-xl" />
+        <div className="grid gap-4 md:grid-cols-4">
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
         </div>
-      </main>
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Skeleton className="h-72 rounded-xl lg:col-span-2" />
+          <Skeleton className="h-72 rounded-xl" />
+        </div>
+      </div>
     );
   }
 
-  const displayName = user.name ?? user.email ?? "Workspace owner";
-  const initials = displayName
-    .split(" ")
-    .map((word: string) => word[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background via-card to-background">
-      <header className="max-w-6xl mx-auto px-4 sm:px-6 py-8 border-b border-border">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-          <div className="animate-fade-in-up">
-            <p className="text-sm font-semibold uppercase tracking-widest text-accent mb-2">Dashboard</p>
-            <h1 className="text-3xl font-bold text-foreground">{displayName}&apos;s workspace</h1>
-            <p className="text-sm text-muted-foreground mt-1">Your session is active and tied to the backend cookie session.</p>
-          </div>
-
-          <div className="flex items-center gap-4 p-4 rounded-lg border border-border bg-card self-start">
-            <div className="w-12 h-12 rounded-full bg-accent text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
-              {initials}
-            </div>
-            <div className="min-w-0">
-              <strong className="block text-foreground truncate">{displayName}</strong>
-              <span className="text-xs text-muted-foreground truncate block">{user.email}</span>
-            </div>
-            <button className="btn btn-ghost btn-sm flex-shrink-0" onClick={logout} type="button">
-              Sign out
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {metrics.map((metric, idx) => (
-            <div
-              key={metric.label}
-              className="card hover:shadow-lg transition-shadow animate-fade-in-up"
-              style={{ animationDelay: `${idx * 50}ms` }}
-            >
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
-                {metric.label}
+    <div className="space-y-5">
+      <Card className="overflow-hidden border-border/70 bg-[linear-gradient(120deg,color-mix(in_oklch,var(--chart-1)_16%,transparent)_0%,transparent_55%),linear-gradient(180deg,var(--card)_0%,color-mix(in_oklch,var(--card)_90%,var(--chart-2))_100%)]">
+        <CardContent className="p-5 md:p-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Financial Decision Support System</p>
+              <h2 className="mt-1 text-2xl font-bold">Founder Command Center</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Real-time visibility across runway, cash flow, receivables, and financial risk.
               </p>
-              <strong className="block text-3xl font-bold text-accent mb-1">{metric.value}</strong>
-              <p className="text-xs text-muted-foreground">{metric.detail}</p>
             </div>
-          ))}
-        </div>
-      </section>
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={() => router.push("/dashboard/planning")}>
+                Scenario Simulator
+              </Button>
+              <Button onClick={() => router.push("/dashboard/copilot")}>
+                Ask AI Assistant
+                <Sparkles size={14} />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 animate-fade-in-up">
-            <div className="card">
-              <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-widest text-accent mb-1">Priorities</p>
-                  <h2 className="text-2xl font-bold text-foreground">Current focus</h2>
-                </div>
-                <p className="badge badge-accent">This week</p>
-              </div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <KpiCard
+          title="Cash Balance"
+          value={`$${metrics.totalCash.toLocaleString()}`}
+          detail="Live treasury snapshot"
+          icon={CircleDollarSign}
+          trend="+4.2% this month"
+        />
+        <KpiCard
+          title="Monthly Burn"
+          value={`$${metrics.monthlyBurn.toLocaleString()}`}
+          detail="Operating spend pace"
+          icon={Flame}
+          trend="-2.1% vs last month"
+        />
+        <KpiCard
+          title="Runway"
+          value={`${metrics.predictedRunwayMonths} months`}
+          detail={`Zero-cash date: ${metrics.runwayZeroDate}`}
+          icon={Gauge}
+          trend="Needs action before Q4"
+        />
+        <KpiCard
+          title="Open Risk Alerts"
+          value={`${derived.alertCount}`}
+          detail={`${derived.overdueCount} overdue invoice issues`}
+          icon={AlertTriangle}
+          trend="2 critical"
+        />
+      </div>
 
-              <div className="space-y-3 mb-6">
-                {priorities.map((item) => (
-                  <div
-                    key={item.title}
-                    className="flex items-center justify-between gap-4 p-4 rounded-lg border border-border hover:bg-muted/30 transition-colors"
+      <div className="grid gap-4 xl:grid-cols-3">
+        <Card className="xl:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle>Performance Overview</CardTitle>
+            <CardDescription>Track liquidity, collections, and risk signals from one place.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="cashflow">
+              <TabsList>
+                <TabsTrigger value="cashflow">Cash Flow</TabsTrigger>
+                <TabsTrigger value="collections">Collections</TabsTrigger>
+                <TabsTrigger value="risk">Risk Feed</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="cashflow">
+                <ChartContainer
+                  className="h-[280px] w-full"
+                  config={{
+                    inflow: { label: "Inflow", color: "var(--chart-2)" },
+                    outflow: { label: "Outflow", color: "var(--chart-4)" },
+                  }}
+                >
+                  <BarChart data={cashflow}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                    <XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={11} />
+                    <YAxis tickLine={false} axisLine={false} fontSize={11} tickFormatter={(v) => `$${Math.round(v / 1000)}k`} />
+                    <ChartTooltip content={<ChartTooltipContent valueFormatter={(v) => `$${v.toLocaleString()}`} />} />
+                    <Bar dataKey="inflow" fill="var(--chart-2)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="outflow" fill="var(--chart-4)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ChartContainer>
+              </TabsContent>
+
+              <TabsContent value="collections">
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <ChartContainer
+                    className="h-[260px] w-full"
+                    config={{
+                      value: { label: "Amount", color: "var(--chart-1)" },
+                    }}
                   >
-                    <div className="min-w-0">
-                      <strong className="block text-foreground">{item.title}</strong>
-                      <p className="text-xs text-muted-foreground mt-0.5">{item.owner}</p>
-                    </div>
-                    <p className="badge badge-secondary flex-shrink-0">{item.state}</p>
+                    <PieChart>
+                      <Pie data={derived.collectionsData} dataKey="value" nameKey="label" outerRadius={88}>
+                        {derived.collectionsData.map((entry) => (
+                          <Cell
+                            key={entry.label}
+                            fill={pieColors[derived.collectionsData.findIndex((item) => item.label === entry.label) % pieColors.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <ChartTooltip content={<ChartTooltipContent valueFormatter={(v) => `$${v.toLocaleString()}`} />} />
+                    </PieChart>
+                  </ChartContainer>
+                  <div className="space-y-2">
+                    {derived.collectionsData.map((row) => (
+                      <div key={row.label} className="rounded-lg border border-border bg-muted/35 p-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium">{row.label}</p>
+                          <p className="text-sm font-semibold">${row.value.toLocaleString()}</p>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">Receivables status bucket</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-
-              <div className="p-4 rounded-lg border border-border bg-muted/20">
-                <div className="flex items-center justify-between mb-3">
-                  <strong className="text-foreground">Launch readiness</strong>
-                  <span className="text-sm font-semibold text-accent">72%</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-border overflow-hidden">
-                  <div className="h-full w-[72%] bg-gradient-to-r from-accent to-accent/70 rounded-full" />
+              </TabsContent>
+
+              <TabsContent value="risk">
+                <div className="space-y-3">
+                  {alerts.map((alert) => (
+                    <div key={alert.id} className="rounded-lg border border-border bg-muted/35 p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold">{alert.title}</p>
+                          <p className="text-xs text-muted-foreground">{alert.description}</p>
+                        </div>
+                        <Badge variant="outline" className="uppercase">
+                          {alert.severity}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Authentication, page structure, and session handling are now aligned.
-                </p>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Runway Confidence</CardTitle>
+            <CardDescription>How healthy your cash position is against a 12-month target.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <div className="mb-1 flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Runway health</span>
+                <span className="font-semibold">{derived.runwayHealth.toFixed(0)}%</span>
               </div>
-            </div>
-          </div>
-
-          <div className="space-y-6 animate-fade-in-up">
-            <div className="card">
-              <p className="text-sm font-semibold uppercase tracking-widest text-accent mb-2">Recent updates</p>
-              <h2 className="text-xl font-bold text-foreground mb-4">Session and UI changes</h2>
-              <ul className="space-y-2">
-                {activity.map((item) => (
-                  <li key={item} className="text-sm text-muted-foreground leading-relaxed">
-                    • {item}
-                  </li>
-                ))}
-              </ul>
+              <Progress value={derived.runwayHealth} />
             </div>
 
-            <div className="card bg-gradient-to-br from-accent/10 to-transparent border-accent/20">
-              <p className="text-sm font-semibold uppercase tracking-widest text-accent mb-2">Account</p>
-              <h2 className="text-xl font-bold text-foreground mb-3">
-                {user.provider === "google" ? "Google session active" : "Credentials session active"}
-              </h2>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {user.provider === "google"
-                  ? "Your Google account is connected through Firebase and mirrored to the app session."
-                  : "Your email and password session is stored with an httpOnly cookie and validated by the backend."}
+            <ChartContainer
+              className="h-[220px] w-full"
+              config={{
+                endingBalance: { label: "Ending Balance", color: "var(--chart-1)" },
+              }}
+            >
+              <AreaChart data={cashflow}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={11} />
+                <YAxis tickLine={false} axisLine={false} fontSize={11} tickFormatter={(v) => `$${Math.round(v / 1000)}k`} />
+                <ChartTooltip content={<ChartTooltipContent valueFormatter={(v) => `$${v.toLocaleString()}`} />} />
+                <Area type="monotone" dataKey="endingBalance" fill="var(--chart-1)" fillOpacity={0.25} stroke="var(--chart-1)" strokeWidth={2} />
+              </AreaChart>
+            </ChartContainer>
+
+            <div className="rounded-lg border border-border bg-muted/35 p-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">AI recommendation</p>
+              <p className="mt-1 text-sm">
+                Prioritize overdue collections and delay discretionary hiring by one month to extend runway by approximately 1.1 months.
               </p>
+              <Button className="mt-3 w-full" variant="secondary" onClick={() => router.push("/dashboard/planning")}>
+                Open What-If Modeling
+                <ArrowUpRight size={14} />
+              </Button>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2">
+            <Bot size={18} />
+            Founder-Friendly Insight Feed
+          </CardTitle>
+          <CardDescription>Jargon-free summaries explaining what changed and what to do next.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-3">
+          <InsightCard
+            title="Cash Flow"
+            text="This month, money is leaving faster than it is coming in. Keep a close eye on payroll week and large vendor payouts."
+          />
+          <InsightCard
+            title="Collections"
+            text="Two customers are paying late. Recovering these invoices quickly can materially reduce short-term runway risk."
+          />
+          <InsightCard
+            title="Planning"
+            text="If hiring increases now, your runway drops below comfort levels. Simulate a phased hiring plan before committing."
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function KpiCard({
+  title,
+  value,
+  detail,
+  icon: Icon,
+  trend,
+}: {
+  title: string;
+  value: string;
+  detail: string;
+  icon: React.ComponentType<{ size?: number }>;
+  trend: string;
+}) {
+  return (
+    <Card className="border-border/70 transition-all hover:-translate-y-0.5 hover:shadow-md">
+      <CardContent className="p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{title}</p>
+          <div className="rounded-md bg-primary/12 p-1.5 text-primary">
+            <Icon size={14} />
           </div>
         </div>
-      </section>
-    </main>
+        <p className="text-2xl font-bold tracking-tight">{value}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+        <p className="mt-2 text-xs font-medium text-primary">{trend}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function InsightCard({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-muted/35 p-4">
+      <p className="text-sm font-semibold">{title}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{text}</p>
+    </div>
   );
 }
