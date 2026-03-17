@@ -12,9 +12,16 @@ const studentProfileSchema = z.object({
 });
 
 const freelancerProfileSchema = z.object({
-  skills: z.array(z.string().min(1)).min(1),
-  hourlyRate: z.union([z.number().nonnegative(), z.null()]).optional(),
-  portfolioUrl: z.union([z.string().url(), z.null()]).optional(),
+  primaryService: z.string().min(1).optional(),
+  experienceLevel: z.enum(["beginner", "intermediate", "expert"]).optional(),
+  monthlyIncomeGoal: z.union([z.number().nonnegative(), z.null()]).optional(),
+  skills: z.array(z.string().min(1)).optional().default([]),
+  portfolioUrl: z.union([
+    z.string().url(),
+    z.string().max(0),
+    z.literal(""),
+    z.null(),
+  ]).optional().transform((v) => (!v ? null : v)),
 });
 
 export async function POST(req: NextRequest) {

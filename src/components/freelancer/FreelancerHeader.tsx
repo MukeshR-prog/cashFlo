@@ -5,9 +5,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "next-themes";
 import {
   Bell, Sun, Moon, ChevronDown, Search, Menu, X, LogOut, Settings, User as UserIcon,
-  CheckCheck, AlertCircle, Info,
+  CheckCheck, AlertCircle, Info, TrendingDown,
 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 
 const routeTitles: Record<string, { title: string; subtitle: string }> = {
@@ -40,17 +40,32 @@ const routeTitles: Record<string, { title: string; subtitle: string }> = {
   "/freelancer/settings": { title: "Settings", subtitle: "Account preferences and configuration" },
 };
 
-const notifications = [
-  { id: 1, title: "Invoice #INV-007 is overdue", time: "2h ago", type: "error",   icon: AlertCircle },
-  { id: 2, title: "Payment received from Arjun Dev", time: "5h ago", type: "success", icon: CheckCheck },
-  { id: 3, title: "New client Priya Mehta added", time: "1d ago", type: "info",  icon: Info },
-];
+interface NotifItem {
+  id: string;
+  message: string;
+  type: string;
+  read: boolean;
+  createdAt: string;
+}
 
-const notifStyles: Record<string, { dot: string; iconClass: string; bg: string }> = {
-  error:   { dot: "bg-destructive", iconClass: "text-destructive", bg: "bg-destructive/8" },
-  success: { dot: "bg-success",     iconClass: "text-success",     bg: "bg-success/8" },
-  info:    { dot: "bg-primary",     iconClass: "text-primary",     bg: "bg-primary/8" },
+const typeIcon = (type: string) => {
+  switch (type) {
+    case "overdue":   return { Icon: AlertCircle,  cls: "text-destructive",  bg: "bg-destructive/8" };
+    case "payment":   return { Icon: CheckCheck,    cls: "text-success",      bg: "bg-success/8" };
+    case "expense":   return { Icon: TrendingDown,  cls: "text-warning",      bg: "bg-warning/8" };
+    default:          return { Icon: Info,           cls: "text-primary",      bg: "bg-primary/8" };
+  }
 };
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
 
 interface HeaderProps {
   onMobileMenuToggle?: () => void;
@@ -62,10 +77,12 @@ export function FreelancerHeader({ onMobileMenuToggle, mobileMenuOpen }: HeaderP
   const { user, logout } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifOpen, setNotifOpen]       = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [notifs, setNotifs]             = useState<NotifItem[]>([]);
+  const [unreadCount, setUnreadCount]   = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const notifRef = useRef<HTMLDivElement>(null);
+  const notifRef    = useRef<HTMLDivElement>(null);
 
   const pageInfo = pathname.startsWith("/freelancer/clients/")
     ? { title: "Client Profile", subtitle: "Client details, invoices, and payment history" }
@@ -75,6 +92,40 @@ export function FreelancerHeader({ onMobileMenuToggle, mobileMenuOpen }: HeaderP
     ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
     : "F";
 
+  // ── Fetch notifications ──────────────────────────────────────────────────────
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await fetch("/api/notifications", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      setNotifs(data.notifications ?? []);
+      setUnreadCount(data.unreadCount ?? 0);
+    } catch {
+      // silently fail
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30_000); // poll every 30s
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  // ── Mark all as read when panel opens ────────────────────────────────────────
+  const handleOpenNotifPanel = async () => {
+    setNotifOpen(true);
+    if (unreadCount > 0) {
+      try {
+        await fetch("/api/notifications", { method: "PATCH" });
+        setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+        setUnreadCount(0);
+      } catch {
+        // silently fail
+      }
+    }
+  };
+
+  // ── Click outside ────────────────────────────────────────────────────────────
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -93,7 +144,7 @@ export function FreelancerHeader({ onMobileMenuToggle, mobileMenuOpen }: HeaderP
       className="sticky top-0 z-40 flex h-[60px] shrink-0 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur-xl sm:px-6"
       style={{ boxShadow: "0 1px 0 var(--border)" }}
     >
-      {/* Mobile menu toggle — animated hamburger */}
+      {/* Mobile hamburger */}
       <button
         onClick={onMobileMenuToggle}
         className="lg:hidden btn btn-ghost btn-icon relative"
@@ -122,19 +173,14 @@ export function FreelancerHeader({ onMobileMenuToggle, mobileMenuOpen }: HeaderP
         className={`hidden md:flex items-center gap-2 px-3.5 py-2 rounded-xl border text-sm text-muted-foreground cursor-pointer transition-all duration-200 ${
           searchFocused ? "border-primary bg-card shadow-sm" : "border-border bg-muted/50 hover:bg-muted"
         }`}
-        style={{
-          minWidth: 200,
-          boxShadow: searchFocused ? "0 0 0 3px color-mix(in oklch, var(--ring) 12%, transparent)" : undefined,
-        }}
+        style={{ minWidth: 200, boxShadow: searchFocused ? "0 0 0 3px color-mix(in oklch, var(--ring) 12%, transparent)" : undefined }}
         tabIndex={0}
         onFocus={() => setSearchFocused(true)}
         onBlur={() => setSearchFocused(false)}
       >
         <Search size={14} className={searchFocused ? "text-primary" : ""} />
         <span className="flex-1">Search...</span>
-        <kbd className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-background font-mono text-muted-foreground">
-          ⌘K
-        </kbd>
+        <kbd className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-background font-mono text-muted-foreground">⌘K</kbd>
       </div>
 
       {/* Theme toggle */}
@@ -149,41 +195,53 @@ export function FreelancerHeader({ onMobileMenuToggle, mobileMenuOpen }: HeaderP
       {/* Notifications */}
       <div className="relative" ref={notifRef}>
         <button
-          onClick={() => setNotifOpen(!notifOpen)}
+          onClick={() => notifOpen ? setNotifOpen(false) : handleOpenNotifPanel()}
           className="relative btn btn-ghost btn-icon text-muted-foreground hover:text-foreground"
           aria-label="Notifications"
         >
           <Bell size={17} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-destructive animate-pulse" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-destructive flex items-center justify-center text-[9px] font-bold text-destructive-foreground animate-pulse">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
         </button>
 
         {notifOpen && (
-          <div className="absolute right-0 top-full mt-2 w-84 rounded-xl border border-border bg-popover shadow-xl animate-scale-in overflow-hidden" style={{ width: 320 }}>
+          <div className="absolute right-0 top-full mt-2 rounded-xl border border-border bg-popover shadow-xl animate-scale-in overflow-hidden" style={{ width: 320 }}>
             <div className="px-4 py-3 border-b border-border flex items-center justify-between">
               <p className="text-sm font-semibold text-foreground">Notifications</p>
-              <button className="text-xs text-primary hover:underline font-medium">Mark all read</button>
+              <span className="text-[10px] badge badge-primary">{notifs.length} total</span>
             </div>
-            <div className="p-2 space-y-1">
-              {notifications.map((n) => {
-                const NIcon = n.icon;
-                const style = notifStyles[n.type];
+            <div className="max-h-72 overflow-y-auto p-2 space-y-1">
+              {notifs.length === 0 && (
+                <div className="text-center py-8">
+                  <Bell size={22} className="text-muted-foreground mx-auto mb-2 opacity-50" />
+                  <p className="text-xs text-muted-foreground">No notifications yet</p>
+                </div>
+              )}
+              {notifs.map((n) => {
+                const { Icon, cls, bg } = typeIcon(n.type);
                 return (
-                  <div key={n.id} className={`flex items-start gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer transition-colors group`}>
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${style.bg}`}>
-                      <NIcon size={14} className={style.iconClass} />
+                  <div key={n.id} className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors ${n.read ? "hover:bg-muted/50" : "hover:bg-muted bg-muted/30"}`}>
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${bg}`}>
+                      <Icon size={14} className={cls} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-foreground leading-snug">{n.title}</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{n.time}</p>
+                      <p className={`text-xs leading-snug ${n.read ? "text-muted-foreground" : "text-foreground font-medium"}`}>{n.message}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{timeAgo(n.createdAt)}</p>
                     </div>
-                    <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${style.dot}`} />
+                    {!n.read && <span className="mt-1.5 w-2 h-2 rounded-full shrink-0 bg-primary" />}
                   </div>
                 );
               })}
             </div>
             <div className="px-4 py-3 border-t border-border bg-muted/30">
-              <button className="text-xs text-primary hover:underline w-full text-center font-medium">
-                View all notifications
+              <button
+                onClick={() => fetch("/api/notifications", { method: "PATCH" }).then(() => { setNotifs((p) => p.map((n) => ({ ...n, read: true }))); setUnreadCount(0); })}
+                className="text-xs text-primary hover:underline w-full text-center font-medium"
+              >
+                Mark all as read
               </button>
             </div>
           </div>
@@ -198,26 +256,15 @@ export function FreelancerHeader({ onMobileMenuToggle, mobileMenuOpen }: HeaderP
         >
           <div className="relative w-8 h-8">
             <div className="w-8 h-8 rounded-full bg-primary/15 text-primary text-xs font-bold flex items-center justify-center ring-2 ring-primary/20 shrink-0">
-              {user?.image ? (
-                <img src={user.image} alt="" className="w-full h-full rounded-full object-cover" />
-              ) : (
-                initials
-              )}
+              {user?.image ? <img src={user.image} alt="" className="w-full h-full rounded-full object-cover" /> : initials}
             </div>
             <span className="online-dot" />
           </div>
           <div className="hidden sm:block text-left">
-            <p className="text-xs font-semibold text-foreground leading-tight truncate max-w-[96px]">
-              {user?.name ?? "Freelancer"}
-            </p>
-            <p className="text-[10px] text-muted-foreground truncate max-w-[96px]">
-              {user?.email}
-            </p>
+            <p className="text-xs font-semibold text-foreground leading-tight truncate max-w-[96px]">{user?.name ?? "Freelancer"}</p>
+            <p className="text-[10px] text-muted-foreground truncate max-w-[96px]">{user?.email}</p>
           </div>
-          <ChevronDown
-            size={13}
-            className={`text-muted-foreground transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
-          />
+          <ChevronDown size={13} className={`text-muted-foreground transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`} />
         </button>
 
         {dropdownOpen && (
@@ -228,29 +275,15 @@ export function FreelancerHeader({ onMobileMenuToggle, mobileMenuOpen }: HeaderP
               <span className="badge badge-primary text-[10px] mt-1.5">Freelancer Pro</span>
             </div>
             <div className="p-1.5 space-y-0.5">
-              <Link
-                href="/freelancer/settings"
-                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                onClick={() => setDropdownOpen(false)}
-              >
-                <UserIcon size={15} className="text-primary" />
-                Profile
+              <Link href="/freelancer/settings" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" onClick={() => setDropdownOpen(false)}>
+                <UserIcon size={15} className="text-primary" /> Profile
               </Link>
-              <Link
-                href="/freelancer/settings"
-                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                onClick={() => setDropdownOpen(false)}
-              >
-                <Settings size={15} className="text-muted-foreground" />
-                Settings
+              <Link href="/freelancer/settings" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" onClick={() => setDropdownOpen(false)}>
+                <Settings size={15} className="text-muted-foreground" /> Settings
               </Link>
               <div className="h-px bg-border my-1" />
-              <button
-                onClick={() => { setDropdownOpen(false); logout(); }}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/8 transition-colors w-full text-left"
-              >
-                <LogOut size={15} />
-                Sign out
+              <button onClick={() => { setDropdownOpen(false); logout(); }} className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/8 transition-colors w-full text-left">
+                <LogOut size={15} /> Sign out
               </button>
             </div>
           </div>

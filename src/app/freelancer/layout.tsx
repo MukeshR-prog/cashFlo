@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { FreelancerSidebar } from "@/components/freelancer/FreelancerSidebar";
 import { FreelancerHeader } from "@/components/freelancer/FreelancerHeader";
+import AIChatbot from "@/components/AIChatbot";
 
 export default function FreelancerLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -60,6 +61,9 @@ export default function FreelancerLayout({ children }: { children: React.ReactNo
           </div>
         </main>
       </div>
+
+      {/* AI Chatbot FAB – available on all freelancer pages */}
+      <AIChatbot />
     </div>
   );
 }

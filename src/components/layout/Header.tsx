@@ -15,8 +15,26 @@ import {
   Settings,
   User as UserIcon,
 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
+
+interface NotifItem {
+  id: string;
+  message: string;
+  type: string;
+  read: boolean;
+  createdAt: string;
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
 
 const routeTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -37,10 +55,40 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
   const { user, logout } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [todayText, setTodayText] = useState("");
+  const [notifOpen, setNotifOpen]       = useState(false);
+  const [todayText, setTodayText]       = useState("");
+  const [notifs, setNotifs]             = useState<NotifItem[]>([]);
+  const [unreadCount, setUnreadCount]   = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const notifRef = useRef<HTMLDivElement>(null);
+  const notifRef    = useRef<HTMLDivElement>(null);
+
+  // Fetch real notifications every 30s
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await fetch("/api/notifications", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      setNotifs(data.notifications ?? []);
+      setUnreadCount(data.unreadCount ?? 0);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30_000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  const handleOpenNotifPanel = async () => {
+    setNotifOpen(true);
+    if (unreadCount > 0) {
+      try {
+        await fetch("/api/notifications", { method: "PATCH" });
+        setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+        setUnreadCount(0);
+      } catch {}
+    }
+  };
 
   const pageTitle = routeTitles[pathname] ?? "Dashboard";
 
@@ -118,39 +166,43 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
       {/* Notifications */}
       <div className="relative" ref={notifRef}>
         <button
-          onClick={() => setNotifOpen(!notifOpen)}
+          onClick={() => notifOpen ? setNotifOpen(false) : handleOpenNotifPanel()}
           className="relative btn btn-ghost btn-icon text-muted-foreground hover:text-foreground"
           aria-label="Notifications"
         >
           <Bell size={18} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-destructive flex items-center justify-center text-[9px] font-bold text-destructive-foreground">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
         </button>
 
         {notifOpen && (
           <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-border bg-popover shadow-lg animate-scale-in overflow-hidden">
             <div className="px-4 py-3 border-b border-border flex items-center justify-between">
               <p className="text-sm font-semibold text-foreground">Notifications</p>
-              <button className="text-xs text-primary hover:underline">Mark all read</button>
+              <button onClick={() => fetch("/api/notifications", { method: "PATCH" }).then(() => { setNotifs((p) => p.map((n) => ({ ...n, read: true }))); setUnreadCount(0); })} className="text-xs text-primary hover:underline">Mark all read</button>
             </div>
-            <div className="p-4 space-y-3">
-              {[
-                { title: "Spending spike detected", time: "2m ago", dot: "bg-destructive" },
-                { title: "Monthly report ready", time: "1h ago", dot: "bg-primary" },
-                { title: "Budget limit reached", time: "3h ago", dot: "bg-warning" },
-              ].map((n, i) => (
-                <div key={i} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer transition-colors">
-                  <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${n.dot}`} />
-                  <div>
-                    <p className="text-xs font-medium text-foreground">{n.title}</p>
-                    <p className="text-[11px] text-muted-foreground">{n.time}</p>
+            <div className="max-h-64 overflow-y-auto p-2 space-y-1">
+              {notifs.length === 0 && (
+                <div className="text-center py-8">
+                  <Bell size={20} className="text-muted-foreground mx-auto mb-2 opacity-40" />
+                  <p className="text-xs text-muted-foreground">No notifications yet</p>
+                </div>
+              )}
+              {notifs.map((n) => (
+                <div key={n.id} className={`flex items-start gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${n.read ? "hover:bg-muted/50" : "hover:bg-muted bg-muted/30"}`}>
+                  <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${n.type === "overdue" ? "bg-destructive" : n.type === "payment" ? "bg-success" : "bg-primary"}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs leading-snug ${n.read ? "text-muted-foreground" : "font-medium text-foreground"}`}>{n.message}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{timeAgo(n.createdAt)}</p>
                   </div>
                 </div>
               ))}
             </div>
             <div className="px-4 py-3 border-t border-border">
-              <button className="text-xs text-primary hover:underline w-full text-center">
-                View all notifications
-              </button>
+              <button className="text-xs text-primary hover:underline w-full text-center">View all notifications</button>
             </div>
           </div>
         )}
