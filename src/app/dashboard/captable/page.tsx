@@ -2,13 +2,26 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { getCapTableData, getDilutionScenarioData } from "@/lib/db";
 import { CapTableMember, DilutionScenario } from "@/lib/mock-data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BadgePercent, ShieldCheck } from "lucide-react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 const COLORS = ["#38bdf8", "#4ade80", "#f59e0b", "#f43f5e", "#a78bfa"];
+
+async function getDashboardData<T>(userId: string, type: string): Promise<T> {
+  const response = await fetch(
+    `/api/dashboard-data?userId=${encodeURIComponent(userId)}&type=${encodeURIComponent(type)}`,
+    { cache: "no-store" }
+  );
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error ?? "Failed to load dashboard data");
+  }
+
+  return payload.data as T;
+}
 
 export default function CapTablePage() {
   const { user } = useAuth();
@@ -21,8 +34,8 @@ export default function CapTablePage() {
       if (!user?.id) return;
       try {
         const [capTableRows, dilutionRow] = await Promise.all([
-          getCapTableData(user.id),
-          getDilutionScenarioData(user.id),
+          getDashboardData<CapTableMember[]>(user.id, "capTable"),
+          getDashboardData<DilutionScenario>(user.id, "dilutionScenario"),
         ]);
         setRows(capTableRows as CapTableMember[]);
         setDilution(dilutionRow as DilutionScenario);

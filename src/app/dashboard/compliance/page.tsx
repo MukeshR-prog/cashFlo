@@ -2,10 +2,23 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { getComplianceAlertsData } from "@/lib/db";
 import { ComplianceAlert } from "@/lib/mock-data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarCheck, FlaskConical, ShieldAlert } from "lucide-react";
+
+async function getDashboardData<T>(userId: string, type: string): Promise<T> {
+  const response = await fetch(
+    `/api/dashboard-data?userId=${encodeURIComponent(userId)}&type=${encodeURIComponent(type)}`,
+    { cache: "no-store" }
+  );
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error ?? "Failed to load dashboard data");
+  }
+
+  return payload.data as T;
+}
 
 export default function CompliancePage() {
   const { user } = useAuth();
@@ -16,7 +29,7 @@ export default function CompliancePage() {
     async function loadData() {
       if (!user?.id) return;
       try {
-        const data = await getComplianceAlertsData(user.id);
+        const data = await getDashboardData<ComplianceAlert[]>(user.id, "compliance");
         setAlerts(data as ComplianceAlert[]);
       } finally {
         setLoading(false);
