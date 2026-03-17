@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import Link from "next/link";
@@ -115,7 +116,7 @@ export default function LandingPage() {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => { setMounted(true); }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -311,7 +312,7 @@ export default function LandingPage() {
                 <div className="flex items-center gap-1 text-warning">
                   {Array.from({ length: 5 }).map((_, i) => <Star key={i} size={13} fill="currentColor" />)}
                 </div>
-                <p className="text-sm text-foreground leading-relaxed flex-1">"{t.quote}"</p>
+                <p className="text-sm text-foreground leading-relaxed flex-1">&quot;{t.quote}&quot;</p>
                 <div className="flex items-center gap-3 pt-3 border-t border-border">
                   <div className="w-9 h-9 rounded-full bg-primary/15 text-primary text-xs font-bold flex items-center justify-center shrink-0">
                     {t.initials}
