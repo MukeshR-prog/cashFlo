@@ -123,6 +123,7 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("[INVOICES_POST]", error);
     if (error?.code === 11000) {
