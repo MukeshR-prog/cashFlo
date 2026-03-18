@@ -12,10 +12,10 @@ import {
 } from "recharts";
 
 const monthlyIncome = [
-  { month: "Jan", settledIncome: 62000, expected: 15000 },
-  { month: "Feb", settledIncome: 48000, expected: 12000 },
-  { month: "Mar", settledIncome: 75000, expected: 18000 },
-  { month: "Apr", settledIncome: 0, expected: 36000 },
+  { month: "Jan", settledIncome: 71000, expected: 18000 },
+  { month: "Feb", settledIncome: 69000, expected: 21000 },
+  { month: "Mar", settledIncome: 83000, expected: 24000 },
+  { month: "Apr", settledIncome: 42000, expected: 35000 },
 ];
 
 const fmt = (v: number) => `₹${v.toLocaleString("en-IN")}`;

@@ -5,6 +5,7 @@ import { Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/Toaster";
+import { DatePickerInput } from "@/components/ui/DatePickerInput";
 
 const categories = ["Software", "Travel", "Internet", "Hardware", "Marketing", "Food", "Health", "Communication", "Misc"];
 const types = ["BUSINESS", "PERSONAL"];
@@ -104,7 +105,12 @@ export default function AddExpensePage() {
           </div>
           <div>
             <label className="field-label">Date</label>
-            <input type="date" placeholder="Select date" className="field-input" value={date} onChange={(e) => setDate(e.target.value)} required />
+            <DatePickerInput
+              value={date}
+              onChange={setDate}
+              placeholder="Select date"
+              required
+            />
           </div>
         </div>
 

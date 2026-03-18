@@ -8,6 +8,7 @@ import {
 import { format } from "date-fns";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { toast } from "@/components/ui/Toaster";
+import { DatePickerInput } from "@/components/ui/DatePickerInput";
 
 // ── Types / constants ─────────────────────────────────────────────────────────
 
@@ -34,15 +35,15 @@ interface ExpenseResponse {
 
 const MOCK_EXPENSES: ExpenseResponse = {
   expenses: [
-    { id: "1",  date: new Date().toISOString(),                   title: "Swiggy Order",         category: "Food & Dining",  amount: 620,   paymentMode: "UPI",         notes: "Dinner",    type: "PERSONAL" },
-    { id: "2",  date: new Date(Date.now()-86400000).toISOString(),  title: "Amazon Purchase",      category: "Shopping",       amount: 3480,  paymentMode: "Credit Card", notes: "Headphones",type: "PERSONAL" },
-    { id: "3",  date: new Date(Date.now()-172800000).toISOString(), title: "Metro Card Recharge",  category: "Transport",      amount: 500,   paymentMode: "UPI",         notes: "",          type: "PERSONAL" },
-    { id: "4",  date: new Date(Date.now()-259200000).toISOString(), title: "Netflix Subscription", category: "Entertainment",  amount: 649,   paymentMode: "Credit Card", notes: "Monthly",   type: "PERSONAL" },
-    { id: "5",  date: new Date(Date.now()-345600000).toISOString(), title: "Electricity Bill",      category: "Utilities",      amount: 2300,  paymentMode: "Net Banking", notes: "Mar bill",  type: "PERSONAL" },
-    { id: "6",  date: new Date(Date.now()-432000000).toISOString(), title: "Gym Membership",        category: "Health",         amount: 1800,  paymentMode: "UPI",         notes: "",          type: "PERSONAL" },
-    { id: "7",  date: new Date(Date.now()-518400000).toISOString(), title: "Petrol",               category: "Transport",      amount: 1200,  paymentMode: "Cash",        notes: "",          type: "PERSONAL" },
-    { id: "8",  date: new Date(Date.now()-604800000).toISOString(), title: "Zomato",               category: "Food & Dining",  amount: 385,   paymentMode: "UPI",         notes: "Lunch",     type: "PERSONAL" },
-    { id: "9",  date: new Date(Date.now()-691200000).toISOString(), title: "Flipkart",             category: "Shopping",       amount: 2100,  paymentMode: "Debit Card",  notes: "Clothes",   type: "PERSONAL" },
+    { id: "1",  date: new Date().toISOString(),                     title: "Guindy Hostel Mess",      category: "Food & Dining", amount: 1450, paymentMode: "UPI",         notes: "Monthly mess", type: "PERSONAL" },
+    { id: "2",  date: new Date(Date.now()-86400000).toISOString(), title: "Aavin Milk + Groceries", category: "Food & Dining", amount: 880,  paymentMode: "UPI",         notes: "Weekend",      type: "PERSONAL" },
+    { id: "3",  date: new Date(Date.now()-172800000).toISOString(),title: "MTC Bus Pass",           category: "Transport",     amount: 1000, paymentMode: "UPI",         notes: "Monthly",      type: "PERSONAL" },
+    { id: "4",  date: new Date(Date.now()-259200000).toISOString(),title: "Rapido Rides",           category: "Transport",     amount: 620,  paymentMode: "UPI",         notes: "Late classes", type: "PERSONAL" },
+    { id: "5",  date: new Date(Date.now()-345600000).toISOString(),title: "TNEB EB Bill",           category: "Utilities",     amount: 1450, paymentMode: "Net Banking", notes: "Shared room",  type: "PERSONAL" },
+    { id: "6",  date: new Date(Date.now()-432000000).toISOString(),title: "Jio Fiber",              category: "Utilities",     amount: 999,  paymentMode: "UPI",         notes: "Monthly",      type: "PERSONAL" },
+    { id: "7",  date: new Date(Date.now()-518400000).toISOString(),title: "Pothys Essentials",      category: "Shopping",      amount: 2100, paymentMode: "Debit Card",  notes: "Clothes",      type: "PERSONAL" },
+    { id: "8",  date: new Date(Date.now()-604800000).toISOString(),title: "Book Fair Purchase",     category: "Shopping",      amount: 1600, paymentMode: "Cash",        notes: "Anna Salai",    type: "PERSONAL" },
+    { id: "9",  date: new Date(Date.now()-691200000).toISOString(),title: "Sun NXT + Hotstar",      category: "Entertainment", amount: 899,  paymentMode: "Credit Card", notes: "Combo pack",    type: "PERSONAL" },
   ],
   pagination: { page: 1, limit: 20, total: 9, totalPages: 1 },
 };
@@ -351,7 +352,11 @@ export default function ExpensesPage() {
               </div>
               <div>
                 <label className="field-label">Date</label>
-                <input type="date" placeholder="Select date" value={date} onChange={(e) => setDate(e.target.value)} className="field-input" />
+                <DatePickerInput
+                  value={date}
+                  onChange={setDate}
+                  placeholder="Select date"
+                />
               </div>
               <div>
                 <label className="field-label">Category</label>

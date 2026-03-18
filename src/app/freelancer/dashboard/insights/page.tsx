@@ -10,52 +10,52 @@ const insightCards = [
   {
     severity: "high",
     icon: AlertTriangle,
-    title: "Unused Subscription Detected",
-    description: "You're paying ₹4,999/mo for Adobe CC but haven't used it in 47 days.",
-    saving: "₹4,999/mo",
+    title: "Low-use Coworking Seat",
+    description: "Your Guindy coworking add-on costs ₹4,200/mo but desk check-ins were only 3 this month.",
+    saving: "₹4,200/mo",
     color: "var(--destructive)",
   },
   {
     severity: "medium",
     icon: RefreshCw,
-    title: "Duplicate Tools",
-    description: "Both Slack and Teams are active. Consolidating saves ₹1,200/mo.",
-    saving: "₹1,200/mo",
+    title: "Duplicate Communication Stack",
+    description: "Google Workspace Meet and Zoom are both active for client calls. Consolidate to save monthly.",
+    saving: "₹1,350/mo",
     color: "var(--warning)",
   },
   {
     severity: "medium",
     icon: TrendingDown,
-    title: "High Recurring Expenses",
-    description: "Your Software category has grown 34% over the last 3 months.",
-    saving: "₹8,400 if capped",
+    title: "Infra Spend Trending Up",
+    description: "AWS Mumbai + CDN costs rose 28% in the last quarter compared to your baseline.",
+    saving: "₹2,800 if capped",
     color: "var(--warning)",
   },
   {
     severity: "low",
     icon: Lightbulb,
-    title: "Annual Plan Savings",
-    description: "Switching Figma to annual billing saves 16% vs your monthly plan.",
-    saving: "₹2,880/yr",
+    title: "Shift Annual Billing",
+    description: "Moving Zoho Workplace and Canva Pro to annual plans reduces overall tooling cost.",
+    saving: "₹9,600/yr",
     color: "var(--chart-1)",
   },
 ];
 
 const recurringExpenses = [
-  { vendor: "Adobe CC", category: "Software", amount: 4999, type: "Monthly" },
-  { vendor: "Figma", category: "Software", amount: 1500, type: "Monthly" },
-  { vendor: "Slack", category: "Communication", amount: 750, type: "Monthly" },
-  { vendor: "Teams", category: "Communication", amount: 650, type: "Monthly" },
-  { vendor: "AWS", category: "Infrastructure", amount: 3200, type: "Monthly" },
-  { vendor: "Zoom", category: "Communication", amount: 1299, type: "Monthly" },
+  { vendor: "Zoho Workplace", category: "Software", amount: 2200, type: "Monthly" },
+  { vendor: "Canva Pro", category: "Software", amount: 999, type: "Monthly" },
+  { vendor: "AWS Mumbai", category: "Infrastructure", amount: 5100, type: "Monthly" },
+  { vendor: "Airtel Xstream", category: "Communication", amount: 1599, type: "Monthly" },
+  { vendor: "Google Workspace", category: "Communication", amount: 950, type: "Monthly" },
+  { vendor: "Notion Team", category: "Tools", amount: 780, type: "Monthly" },
 ];
 
 const categoryExpenseData = [
-  { category: "Software", amount: 8200 },
-  { category: "Infrastructure", amount: 3200 },
-  { category: "Communication", amount: 2699 },
-  { category: "Marketing", amount: 1500 },
-  { category: "Tools", amount: 980 },
+  { category: "Software", amount: 7190 },
+  { category: "Infrastructure", amount: 5100 },
+  { category: "Communication", amount: 2549 },
+  { category: "Marketing", amount: 2100 },
+  { category: "Tools", amount: 780 },
 ];
 
 const severityColor: Record<string, string> = {
@@ -65,7 +65,7 @@ const severityColor: Record<string, string> = {
 };
 
 export default function FreelancerInsightsPage() {
-  const totalPotentialSavings = "₹9,079/mo";
+  const totalPotentialSavings = "₹8,350/mo";
 
   return (
     <div className="space-y-6">

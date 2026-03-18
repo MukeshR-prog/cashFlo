@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { Filter } from "lucide-react";
 import Link from "next/link";
+import { DatePickerInput } from "@/components/ui/DatePickerInput";
 
 const payments = [
-  { id: "PAY-031", invoice: "INV-021", client: "Nexus Labs", amount: 20000, date: "2026-03-15", mode: "UPI", txId: "UPI2031NEXUS", status: "Completed", remaining: 22000, payerName: "Arjun Mehta", payerEmail: "arjun@nexuslabs.io", payerPhone: "+91 92345 11002" },
-  { id: "PAY-030", invoice: "INV-021", client: "Nexus Labs", amount: 22000, date: "2026-03-14", mode: "Bank", txId: "NEFT003210NX", status: "Completed", remaining: 0, payerName: "Ravi Menon", payerEmail: "finance@nexuslabs.io", payerPhone: "+91 98110 44233" },
-  { id: "PAY-029", invoice: "INV-017", client: "BuildZen", amount: 33000, date: "2026-02-20", mode: "PayPal", txId: "PP8834BZEN20", status: "Completed", remaining: 0, payerName: "Vikram Rao", payerEmail: "accounts@buildzen.in", payerPhone: "+91 97644 22119" },
-  { id: "PAY-028", invoice: "INV-014", client: "Synapse Media", amount: 8500, date: "2026-02-10", mode: "UPI", txId: "UPI8823SMD14", status: "Completed", remaining: 0, payerName: "Sana Khan", payerEmail: "billing@synapse.media", payerPhone: "+91 98220 66441" },
+  { id: "PAY-046", invoice: "INV-042", client: "Velachery HealthTech", amount: 28000, date: "2026-03-15", mode: "UPI", txId: "UPI2046VHT", status: "Completed", remaining: 12000, payerName: "Karthik Raman", payerEmail: "accounts@velacheryhealth.in", payerPhone: "+91 97890 11452" },
+  { id: "PAY-045", invoice: "INV-042", client: "Velachery HealthTech", amount: 12000, date: "2026-03-12", mode: "Bank", txId: "NEFT004512VHT", status: "Completed", remaining: 0, payerName: "Divya Narayanan", payerEmail: "finance@velacheryhealth.in", payerPhone: "+91 98402 88231" },
+  { id: "PAY-044", invoice: "INV-038", client: "Coimbatore Agro Labs", amount: 36000, date: "2026-02-26", mode: "Bank", txId: "NEFT004438CAL", status: "Completed", remaining: 0, payerName: "Praveen Kumar", payerEmail: "billing@coagrolabs.com", payerPhone: "+91 94433 76210" },
+  { id: "PAY-043", invoice: "INV-035", client: "Madurai Retail Hub", amount: 14500, date: "2026-02-10", mode: "UPI", txId: "UPI2043MRH", status: "Completed", remaining: 0, payerName: "Sowmya Krishnan", payerEmail: "accounts@madurairetailhub.in", payerPhone: "+91 98940 23176" },
 ];
 
 const modeStyle: Record<string, string> = {
@@ -80,12 +81,12 @@ export default function PaymentsPage() {
           style={{ width: '200px' }}
         />
         <span className="text-[11px] font-semibold text-muted-foreground">Date</span>
-        <input
-          className="field-input h-9"
-          type="date"
+        <DatePickerInput
+          className="w-44"
+          inputClassName="text-xs"
           value={dateFilter}
-          onChange={(e) => setDateFilter(e.target.value)}
-          aria-label="Filter by date"
+          onChange={setDateFilter}
+          ariaLabel="Filter by date"
           title="Filter by date"
         />
       </div>

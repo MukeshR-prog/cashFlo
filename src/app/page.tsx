@@ -134,8 +134,13 @@ export default function LandingPage() {
       <nav className={`sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl transition-all duration-300 ${scrolled ? "border-border shadow-sm" : "border-transparent"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-16 gap-6">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
-            <ThemeLogo width={112} height={30} priority className="transition-transform duration-200 group-hover:scale-[1.02]" />
+          <Link href="/" className="group relative z-10 flex items-center gap-2.5">
+            <ThemeLogo width={50} height={40} priority className="transition-transform duration-200 group-hover:scale-[1.02]" />
+            <span className="text-lg font-bold tracking-tight text-foreground">CashFlo</span>
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute -bottom-1 left-0 right-0 h-px origin-left scale-x-0 rounded-full bg-primary transition-transform duration-200 group-hover:scale-x-100"
+            />
           </Link>
 
           {/* Nav links */}
@@ -237,7 +242,7 @@ export default function LandingPage() {
           <div className="mt-20 relative max-w-4xl mx-auto animate-fade-up delay-500">
             {/* Glow halo */}
             <div className="absolute -inset-4 rounded-3xl opacity-30 blur-3xl"
-                 style={{ background: "radial-gradient(ellipse at center, var(--primary), transparent 70%)" }} />
+              style={{ background: "radial-gradient(ellipse at center, var(--primary), transparent 70%)" }} />
 
             {/* Shadow card behind */}
             <div className="absolute inset-x-6 -bottom-3 top-3 rounded-2xl border border-border bg-muted/50 opacity-40 blur-sm" />
@@ -390,11 +395,10 @@ export default function LandingPage() {
           {plans.map((plan, i) => (
             <div
               key={plan.name}
-              className={`relative rounded-2xl border p-6 transition-all duration-250 animate-fade-up ${
-                plan.highlighted
-                  ? "border-primary bg-card shadow-xl ring-2 ring-primary/20 hover:shadow-2xl hover:-translate-y-1"
-                  : "border-border bg-card hover:shadow-md hover:-translate-y-0.5 hover:border-primary/20"
-              }`}
+              className={`relative rounded-2xl border p-6 transition-all duration-250 animate-fade-up ${plan.highlighted
+                ? "border-primary bg-card shadow-xl ring-2 ring-primary/20 hover:shadow-2xl hover:-translate-y-1"
+                : "border-border bg-card hover:shadow-md hover:-translate-y-0.5 hover:border-primary/20"
+                }`}
               style={{ animationDelay: `${i * 90}ms` }}
             >
               {plan.highlighted && (

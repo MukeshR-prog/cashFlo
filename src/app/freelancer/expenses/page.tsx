@@ -5,6 +5,7 @@ import { Plus, Download } from "lucide-react";
 import Link from "next/link";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { toast } from "@/components/ui/Toaster";
+import { DatePickerInput } from "@/components/ui/DatePickerInput";
 
 interface Expense {
   id: string;
@@ -128,12 +129,12 @@ export default function FreelancerExpensesPage() {
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[11px] font-semibold text-muted-foreground">Date</span>
-            <input
-              className="field-input h-9 w-37"
-              type="date"
+            <DatePickerInput
+              className="w-44"
+              inputClassName="text-xs"
               value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              aria-label="Filter by date"
+              onChange={setDateFilter}
+              ariaLabel="Filter by date"
               title="Filter by date"
             />
             <button

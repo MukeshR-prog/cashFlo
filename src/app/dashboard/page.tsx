@@ -36,38 +36,38 @@ interface CategoryData  { categories: CategoryItem[] }
 // ── Mock Fallback Data ─────────────────────────────────────────────────────────
 
 const MOCK_SUMMARY: DashboardSummary = {
-  cashInHand: 48750,
-  monthlyExpenses: 26400,
-  totalExpenses: 47,
-  monthlyIncome: 85000,
+  cashInHand: 36240,
+  monthlyExpenses: 18450,
+  totalExpenses: 39,
+  monthlyIncome: 42000,
   recentTransactions: [
-    { id: "1", title: "Swiggy Order",      amount: 620,   date: new Date().toISOString(), type: "expense", category: "Food & Dining"  },
-    { id: "2", title: "Salary Credit",     amount: 85000, date: new Date().toISOString(), type: "income",  category: "Income"         },
-    { id: "3", title: "Amazon Shopping",   amount: 3480,  date: new Date().toISOString(), type: "expense", category: "Shopping"       },
-    { id: "4", title: "Metro Recharge",    amount: 500,   date: new Date().toISOString(), type: "expense", category: "Transport"      },
-    { id: "5", title: "Netflix",           amount: 649,   date: new Date().toISOString(), type: "expense", category: "Entertainment"  },
-    { id: "6", title: "Electricity Bill",  amount: 2300,  date: new Date().toISOString(), type: "expense", category: "Utilities"      },
-    { id: "7", title: "Gym Membership",    amount: 1800,  date: new Date().toISOString(), type: "expense", category: "Health"         },
+    { id: "1", title: "Guindy Hostel Mess",      amount: 1450,  date: new Date().toISOString(), type: "expense", category: "Food & Dining"  },
+    { id: "2", title: "Part-time Tuition Credit", amount: 22000, date: new Date().toISOString(), type: "income",  category: "Income"         },
+    { id: "3", title: "Pothys Essentials",       amount: 2100,  date: new Date().toISOString(), type: "expense", category: "Shopping"       },
+    { id: "4", title: "MTC Monthly Bus Pass",    amount: 1000,  date: new Date().toISOString(), type: "expense", category: "Transport"      },
+    { id: "5", title: "Sun NXT + Hotstar",       amount: 899,   date: new Date().toISOString(), type: "expense", category: "Entertainment"  },
+    { id: "6", title: "TNEB EB Bill",            amount: 1450,  date: new Date().toISOString(), type: "expense", category: "Utilities"      },
+    { id: "7", title: "Apollo Pharmacy",         amount: 760,   date: new Date().toISOString(), type: "expense", category: "Health"         },
   ],
 };
 
 const MOCK_CATEGORIES: CategoryData = {
   categories: [
-    { name: "Food & Dining",  value: 8200 },
-    { name: "Shopping",       value: 6500 },
-    { name: "Transport",      value: 3800 },
-    { name: "Entertainment",  value: 2900 },
-    { name: "Utilities",      value: 5000 },
+    { name: "Food & Dining",  value: 5200 },
+    { name: "Utilities",      value: 5100 },
+    { name: "Shopping",       value: 3700 },
+    { name: "Transport",      value: 2800 },
+    { name: "Entertainment",  value: 1650 },
   ],
 };
 
 const MOCK_TREND = [
-  { month: "Oct", amount: 24200 },
-  { month: "Nov", amount: 31800 },
-  { month: "Dec", amount: 28500 },
-  { month: "Jan", amount: 19200 },
-  { month: "Feb", amount: 22800 },
-  { month: "Mar", amount: 26400 },
+  { month: "Oct", amount: 16500 },
+  { month: "Nov", amount: 17800 },
+  { month: "Dec", amount: 19200 },
+  { month: "Jan", amount: 17100 },
+  { month: "Feb", amount: 18100 },
+  { month: "Mar", amount: 18450 },
 ];
 
 const CHART_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];

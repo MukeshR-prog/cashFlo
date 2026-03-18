@@ -32,29 +32,29 @@ interface TrendData {
 // ── Mock Fallback ─────────────────────────────────────────────────────────────
 
 const MOCK_BALANCE: BalanceData = {
-  currentBalance: 48750,
-  inflow: 255000,
-  outflow: 206250,
-  monthlyInflow: 85000,
-  monthlyOutflow: 26400,
+  currentBalance: 36240,
+  inflow: 126000,
+  outflow: 89760,
+  monthlyInflow: 42000,
+  monthlyOutflow: 18450,
   recentDeductions: [
-    { id: "1", title: "Swiggy Order",         amount: 620,  category: "Food & Dining", date: new Date().toISOString() },
-    { id: "2", title: "Amazon Purchase",       amount: 3480, category: "Shopping",      date: new Date(Date.now() - 86400000).toISOString() },
-    { id: "3", title: "Metro Card Recharge",   amount: 500,  category: "Transport",     date: new Date(Date.now() - 172800000).toISOString() },
-    { id: "4", title: "Netflix Subscription",  amount: 649,  category: "Entertainment", date: new Date(Date.now() - 259200000).toISOString() },
-    { id: "5", title: "Electricity Bill",      amount: 2300, category: "Utilities",     date: new Date(Date.now() - 345600000).toISOString() },
-    { id: "6", title: "Gym Membership",        amount: 1800, category: "Health",        date: new Date(Date.now() - 432000000).toISOString() },
+    { id: "1", title: "Guindy Hostel Mess",      amount: 1450, category: "Food & Dining", date: new Date().toISOString() },
+    { id: "2", title: "Pothys Essentials",       amount: 2100, category: "Shopping",      date: new Date(Date.now() - 86400000).toISOString() },
+    { id: "3", title: "MTC Monthly Bus Pass",    amount: 1000, category: "Transport",     date: new Date(Date.now() - 172800000).toISOString() },
+    { id: "4", title: "Sun NXT + Hotstar",       amount: 899,  category: "Entertainment", date: new Date(Date.now() - 259200000).toISOString() },
+    { id: "5", title: "TNEB EB Bill",            amount: 1450, category: "Utilities",     date: new Date(Date.now() - 345600000).toISOString() },
+    { id: "6", title: "Apollo Pharmacy",         amount: 760,  category: "Health",        date: new Date(Date.now() - 432000000).toISOString() },
   ],
 };
 
 const MOCK_TREND: TrendData = {
   trend: [
-    { month: "Oct", amount: 24200 },
-    { month: "Nov", amount: 31800 },
-    { month: "Dec", amount: 28500 },
-    { month: "Jan", amount: 19200 },
-    { month: "Feb", amount: 22800 },
-    { month: "Mar", amount: 26400 },
+    { month: "Oct", amount: 16500 },
+    { month: "Nov", amount: 17800 },
+    { month: "Dec", amount: 19200 },
+    { month: "Jan", amount: 17100 },
+    { month: "Feb", amount: 18100 },
+    { month: "Mar", amount: 18450 },
   ],
 };
 

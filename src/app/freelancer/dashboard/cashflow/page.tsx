@@ -14,20 +14,20 @@ import {
 } from "recharts";
 
 const monthlyCash = [
-  { month: "Oct", inflow: 42000, outflow: 18000, balance: 24000 },
-  { month: "Nov", inflow: 55000, outflow: 22000, balance: 57000 },
-  { month: "Dec", inflow: 38000, outflow: 19000, balance: 76000 },
-  { month: "Jan", inflow: 67000, outflow: 25000, balance: 118000 },
-  { month: "Feb", inflow: 48000, outflow: 21000, balance: 145000 },
-  { month: "Mar", inflow: 75000, outflow: 28000, balance: 192000 },
+  { month: "Oct", inflow: 58000, outflow: 26000, balance: 32000 },
+  { month: "Nov", inflow: 64000, outflow: 28500, balance: 67500 },
+  { month: "Dec", inflow: 52000, outflow: 24000, balance: 95500 },
+  { month: "Jan", inflow: 76000, outflow: 31200, balance: 140300 },
+  { month: "Feb", inflow: 69000, outflow: 29500, balance: 179800 },
+  { month: "Mar", inflow: 83000, outflow: 33800, balance: 229000 },
 ];
 
 const ledger = [
-  { date: "2026-03-12", source: "INV-024", type: "Inflow", amount: 28000 },
-  { date: "2026-03-13", source: "AWS + Tools", type: "Outflow", amount: 5100 },
-  { date: "2026-03-14", source: "INV-021 settlement", type: "Inflow", amount: 22000 },
-  { date: "2026-03-15", source: "Office internet", type: "Outflow", amount: 1400 },
-  { date: "2026-03-16", source: "INV-022 partial", type: "Inflow", amount: 5000 },
+  { date: "2026-03-12", source: "INV-042 Velachery HealthTech", type: "Inflow", amount: 32000 },
+  { date: "2026-03-13", source: "Zoho Suite + AWS Mumbai", type: "Outflow", amount: 6900 },
+  { date: "2026-03-14", source: "INV-038 settlement", type: "Inflow", amount: 36000 },
+  { date: "2026-03-15", source: "Tangedco office EB", type: "Outflow", amount: 2100 },
+  { date: "2026-03-16", source: "INV-045 partial", type: "Inflow", amount: 15000 },
 ];
 
 const fmt = (v: number) => `₹${v.toLocaleString("en-IN")}`;

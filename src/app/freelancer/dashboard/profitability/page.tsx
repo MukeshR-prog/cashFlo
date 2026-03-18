@@ -14,12 +14,12 @@ import {
 } from "recharts";
 
 const profitability = [
-  { month: "Oct", income: 42000, businessExpenses: 18000, profit: 24000 },
-  { month: "Nov", income: 55000, businessExpenses: 22000, profit: 33000 },
-  { month: "Dec", income: 38000, businessExpenses: 19000, profit: 19000 },
-  { month: "Jan", income: 67000, businessExpenses: 25000, profit: 42000 },
-  { month: "Feb", income: 48000, businessExpenses: 21000, profit: 27000 },
-  { month: "Mar", income: 75000, businessExpenses: 28000, profit: 47000 },
+  { month: "Oct", income: 58000, businessExpenses: 26000, profit: 32000 },
+  { month: "Nov", income: 64000, businessExpenses: 28500, profit: 35500 },
+  { month: "Dec", income: 52000, businessExpenses: 24000, profit: 28000 },
+  { month: "Jan", income: 76000, businessExpenses: 31200, profit: 44800 },
+  { month: "Feb", income: 69000, businessExpenses: 29500, profit: 39500 },
+  { month: "Mar", income: 83000, businessExpenses: 33800, profit: 49200 },
 ];
 
 const fmt = (v: number) => `₹${v.toLocaleString("en-IN")}`;

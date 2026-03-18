@@ -5,6 +5,7 @@ import { Plus, Save, Send, FileDown, Eye, Trash2, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/Toaster";
+import { DatePickerInput } from "@/components/ui/DatePickerInput";
 
 interface ClientOption {
   id: string;
@@ -180,12 +181,10 @@ export default function CreateInvoicePage() {
             </div>
             <div>
               <label className="field-label">Due Date</label>
-              <input
-                type="date"
-                placeholder="Select due date"
-                className="field-input"
+              <DatePickerInput
                 value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+                onChange={setDueDate}
+                placeholder="Select due date"
               />
             </div>
           </div>

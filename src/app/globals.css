@@ -440,43 +440,6 @@
     box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 15%, transparent);
   }
 
-  /* Date input specific styling */
-  .field-input[type="date"] {
-    @apply px-2.5 py-2 text-xs;
-    background-color: var(--card);
-    color: var(--foreground) !important;
-    width: 130px !important;
-    font-size: 0.75rem;
-    cursor: pointer;
-    color-scheme: light dark;
-  }
-
-  .field-input[type="date"]::-webkit-datetime-edit,
-  .field-input[type="date"]::-webkit-datetime-edit-year-field,
-  .field-input[type="date"]::-webkit-datetime-edit-month-field,
-  .field-input[type="date"]::-webkit-datetime-edit-day-field,
-  .field-input[type="date"]::-webkit-datetime-edit-text {
-    color: var(--foreground);
-  }
-
-  .field-input[type="date"]::-webkit-calendar-picker-indicator {
-    cursor: pointer;
-    border-radius: 3px;
-    margin-right: 2px;
-    padding: 2px 4px;
-    filter: brightness(0.8) contrast(1.2);
-  }
-
-  .dark .field-input[type="date"] {
-    color: var(--foreground) !important;
-    background-color: var(--card);
-    border-color: color-mix(in oklch, var(--border) 85%, var(--foreground));
-  }
-
-  .dark .field-input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: invert(1) brightness(1.35) contrast(1.2);
-  }
-
   .field-label {
     @apply block text-sm font-medium text-foreground mb-1.5;
     letter-spacing: -0.01em;

@@ -27,35 +27,35 @@ interface HeatData  { heatmap: HeatEntry[] }
 
 const MOCK_CATEGORIES: CategoryData = {
   categories: [
-    { name: "Food & Dining",  value: 8200 },
-    { name: "Shopping",       value: 6500 },
-    { name: "Transport",      value: 3800 },
-    { name: "Entertainment",  value: 2900 },
-    { name: "Utilities",      value: 5000 },
+    { name: "Food & Dining",  value: 5200 },
+    { name: "Utilities",      value: 5100 },
+    { name: "Shopping",       value: 3700 },
+    { name: "Transport",      value: 2800 },
+    { name: "Entertainment",  value: 1650 },
   ],
 };
 
 const MOCK_MONTHLY: MonthlyData = {
   monthly: [
-    { month: "Oct", "Food & Dining": 6200, Shopping: 4100, Transport: 2300, Utilities: 4800 },
-    { month: "Nov", "Food & Dining": 7800, Shopping: 5900, Transport: 3100, Utilities: 5200 },
-    { month: "Dec", "Food & Dining": 9100, Shopping: 7200, Transport: 2800, Utilities: 4800 },
-    { month: "Jan", "Food & Dining": 5200, Shopping: 3800, Transport: 2100, Utilities: 4500 },
-    { month: "Feb", "Food & Dining": 6100, Shopping: 4200, Transport: 2500, Utilities: 4700 },
-    { month: "Mar", "Food & Dining": 8200, Shopping: 6500, Transport: 3800, Utilities: 5000 },
+    { month: "Oct", "Food & Dining": 4300, Shopping: 2800, Transport: 2400, Utilities: 4600 },
+    { month: "Nov", "Food & Dining": 4500, Shopping: 3100, Transport: 2600, Utilities: 4700 },
+    { month: "Dec", "Food & Dining": 5100, Shopping: 3600, Transport: 2900, Utilities: 5000 },
+    { month: "Jan", "Food & Dining": 4700, Shopping: 3000, Transport: 2500, Utilities: 4300 },
+    { month: "Feb", "Food & Dining": 4900, Shopping: 3200, Transport: 2600, Utilities: 4400 },
+    { month: "Mar", "Food & Dining": 5200, Shopping: 3700, Transport: 2800, Utilities: 5100 },
   ],
 };
 
 const MOCK_TREND: TrendData = {
   trend: [
-    { month: "Aug", amount: 18200 },
-    { month: "Sep", amount: 22400 },
-    { month: "Oct", amount: 24200 },
-    { month: "Nov", amount: 31800 },
-    { month: "Dec", amount: 28500 },
-    { month: "Jan", amount: 19200 },
-    { month: "Feb", amount: 22800 },
-    { month: "Mar", amount: 26400 },
+    { month: "Aug", amount: 14800 },
+    { month: "Sep", amount: 15900 },
+    { month: "Oct", amount: 16500 },
+    { month: "Nov", amount: 17800 },
+    { month: "Dec", amount: 19200 },
+    { month: "Jan", amount: 17100 },
+    { month: "Feb", amount: 18100 },
+    { month: "Mar", amount: 18450 },
   ],
 };
 
