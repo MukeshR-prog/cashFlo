@@ -17,6 +17,9 @@ import {
   Loader2,
   TriangleAlert,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
+import remarkGfm from "remark-gfm";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -289,7 +292,15 @@ export default function AIChatbot() {
 
                 <div className="ai-bubble-col">
                   <div className={`ai-bubble ai-bubble--${msg.role}`}>
-                    <p className="ai-bubble-text">{msg.content}</p>
+                    {msg.role === "assistant" ? (
+                      <div className="ai-bubble-markdown">
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="ai-bubble-text">{msg.content}</p>
+                    )}
                   </div>
                   <div className="ai-bubble-meta">
                     <span className="ai-time">{fmt(msg.timestamp)}</span>
@@ -613,6 +624,32 @@ export default function AIChatbot() {
           padding: 14px 18px;
         }
         .ai-bubble-text { margin: 0; white-space: pre-wrap; }
+        .ai-bubble-markdown { margin: 0; color: inherit; }
+        .ai-bubble-markdown p {
+          margin: 0 0 0.45rem;
+          white-space: pre-wrap;
+        }
+        .ai-bubble-markdown p:last-child { margin-bottom: 0; }
+        .ai-bubble-markdown ul,
+        .ai-bubble-markdown ol {
+          margin: 0.25rem 0 0.45rem 1rem;
+          padding: 0;
+        }
+        .ai-bubble-markdown li { margin: 0.18rem 0; }
+        .ai-bubble-markdown strong { font-weight: 700; }
+        .ai-bubble-markdown em { font-style: italic; }
+        .ai-bubble-markdown a {
+          color: inherit;
+          text-decoration: underline;
+          text-underline-offset: 2px;
+        }
+        .ai-bubble-markdown code {
+          background: color-mix(in oklch, var(--foreground) 8%, transparent);
+          border-radius: 0.35rem;
+          padding: 1px 4px;
+          font-size: 12px;
+          font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
         .ai-bubble-meta {
           display: flex;
           align-items: center;

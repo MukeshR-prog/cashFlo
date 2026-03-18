@@ -943,14 +943,38 @@
    RECHARTS THEME OVERRIDES
    ============================================================ */
 .recharts-tooltip-wrapper .recharts-default-tooltip {
-  background: var(--card) !important;
-  border: 1px solid var(--border) !important;
+  background: color-mix(in oklch, var(--card) 96%, var(--background)) !important;
+  border: 1px solid color-mix(in oklch, var(--border) 80%, var(--primary)) !important;
   border-radius: var(--radius) !important;
-  box-shadow: var(--shadow-md) !important;
+  box-shadow: var(--shadow-lg) !important;
   color: var(--foreground) !important;
   font-size: 12px !important;
   font-family: var(--font-sans), sans-serif !important;
   padding: 10px 14px !important;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-label {
+  color: var(--foreground) !important;
+  font-weight: 700 !important;
+  margin-bottom: 6px !important;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-item {
+  color: var(--foreground) !important;
+  padding: 2px 0 !important;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-item-name {
+  color: var(--muted-foreground) !important;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-item-value {
+  color: var(--foreground) !important;
+  font-weight: 700 !important;
+}
+
+.recharts-tooltip-cursor {
+  fill: color-mix(in oklch, var(--primary) 14%, transparent) !important;
 }
 
 .recharts-cartesian-grid line {
@@ -997,12 +1021,26 @@
 
 /* Tooltip visibility in dark mode */
 .dark .recharts-tooltip-wrapper .recharts-default-tooltip {
-  background: color-mix(in oklch, var(--card) 110%, var(--primary) 5%) !important;
-  border-color: color-mix(in oklch, var(--primary) 30%, var(--border)) !important;
+  background: color-mix(in oklch, var(--card) 94%, var(--background)) !important;
+  border-color: color-mix(in oklch, var(--primary) 35%, var(--border)) !important;
 }
 
 .dark .recharts-tooltip-label {
   color: color-mix(in oklch, var(--foreground) 95%, transparent) !important;
+}
+
+.dark .recharts-tooltip-cursor {
+  fill: color-mix(in oklch, var(--primary) 22%, transparent) !important;
+}
+
+.chart-tooltip {
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in oklch, var(--border) 80%, var(--primary));
+  background: color-mix(in oklch, var(--card) 96%, var(--background));
+  color: var(--foreground);
+  box-shadow: var(--shadow-lg);
+  padding: 10px 12px;
+  font-size: 12px;
 }
 
 /* ============================================================
