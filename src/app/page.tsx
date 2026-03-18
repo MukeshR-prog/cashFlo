@@ -437,31 +437,23 @@ export default function LandingPage() {
       </section>
 
       {/* ── CTA Banner ───────────────────────────────────── */}
-      <section className="relative overflow-hidden border-t border-border py-24 text-center">
-        {/* Animated gradient background */}
-        <div className="absolute inset-0 animate-gradient-x" style={{
-          background: "linear-gradient(135deg, var(--primary) 0%, var(--accent) 50%, var(--primary) 100%)",
-          backgroundSize: "200% 200%",
-        }} />
-        <div className="absolute inset-0 opacity-15">
-          <div className="absolute inset-0 dot-pattern" />
-        </div>
+      <section className="border-t border-border py-24 text-center bg-muted/20">
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6">
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-5 tracking-tight text-balance">
+          <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-5 tracking-tight text-balance">
             Start tracking smarter today
           </h2>
-          <p className="text-white/80 text-lg mb-8">
+          <p className="text-muted-foreground text-lg mb-8">
             Join 5,200+ people who have taken control of their finances with cashFlo.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/signup"
-              className="btn btn-lg gap-2 bg-white text-primary hover:bg-white/95 font-bold shadow-lg group"
+              className="btn btn-primary btn-lg gap-2 shadow-md hover:shadow-lg group"
             >
               Create free account
               <ArrowRight size={17} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
-            <Link href={dashboardHref} className="btn btn-lg gap-2 bg-white/10 border border-white/20 text-white hover:bg-white/20 backdrop-blur">
+            <Link href={dashboardHref} className="btn btn-outline btn-lg gap-2">
               Explore dashboard
             </Link>
           </div>

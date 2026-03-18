@@ -95,7 +95,7 @@ const severityConfig = {
 function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number; name?: string }[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-md text-xs">
+    <div className="chart-tooltip">
       <p className="text-muted-foreground mb-1">{label}</p>
       {payload.map((p, i) => (
         <p key={i} className="font-bold text-foreground">₹{Number(p.value).toLocaleString("en-IN")}</p>
