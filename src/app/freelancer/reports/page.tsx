@@ -6,6 +6,7 @@ import {
   PieChart, Pie, Cell,
 } from "recharts";
 import { FileDown, TrendingUp, TrendingDown, DollarSign, Receipt } from "lucide-react";
+import { useState } from "react";
 
 const cashFlowData = [
   { month: "Oct", cashIn: 42000, cashOut: 18000 },
@@ -28,7 +29,119 @@ const totalExpenses = categoryExpenses.reduce((s, c) => s + c.value, 0);
 const totalIncome = 75000;
 const profit = totalIncome - totalExpenses;
 
+function toInr(value: number) {
+  return `₹${value.toLocaleString("en-IN")}`;
+}
+
 export default function MonthlyReportPage() {
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+
+  const handleCsvExport = async () => {
+    try {
+      setIsExportingCsv(true);
+      const res = await fetch("/api/freelancer/export?type=full&format=csv", { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to export CSV");
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "cashflo-reports.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("[MONTHLY_REPORT_CSV_EXPORT]", error);
+      alert("Unable to export CSV right now. Please try again.");
+    } finally {
+      setIsExportingCsv(false);
+    }
+  };
+
+  const handlePdfExport = () => {
+    try {
+      setIsExportingPdf(true);
+      const w = window.open("", "_blank", "noopener,noreferrer,width=1000,height=800");
+      if (!w) {
+        alert("Popup blocked. Please allow popups and try again.");
+        return;
+      }
+
+      const rows = cashFlowData
+        .map((row) => `<tr><td>${row.month}</td><td>${toInr(row.cashIn)}</td><td>${toInr(row.cashOut)}</td></tr>`)
+        .join("");
+
+      const categories = categoryExpenses
+        .map((row) => `<tr><td>${row.name}</td><td>${toInr(row.value)}</td></tr>`)
+        .join("");
+
+      const now = new Date();
+      const renderedAt = now.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+
+      w.document.write(`
+        <!doctype html>
+        <html>
+          <head>
+            <meta charset="utf-8" />
+            <title>cashFlo Monthly Report</title>
+            <style>
+              body { font-family: Arial, Helvetica, sans-serif; margin: 28px; color: #111827; }
+              h1 { margin: 0 0 4px; }
+              p { margin: 0 0 12px; color: #4b5563; }
+              .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 18px 0; }
+              .kpi { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; }
+              .kpi h3 { margin: 0 0 6px; font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; }
+              .kpi p { margin: 0; font-size: 20px; font-weight: 700; color: #111827; }
+              table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+              th, td { border: 1px solid #e5e7eb; padding: 8px 10px; text-align: left; font-size: 12px; }
+              th { background: #f9fafb; }
+              .section { margin-top: 18px; }
+              .section h2 { margin: 0 0 8px; font-size: 16px; }
+            </style>
+          </head>
+          <body>
+            <h1>cashFlo Monthly Report</h1>
+            <p>Generated on ${renderedAt}</p>
+
+            <div class="grid">
+              <div class="kpi"><h3>Total Income</h3><p>${toInr(totalIncome)}</p></div>
+              <div class="kpi"><h3>Total Expenses</h3><p>${toInr(totalExpenses)}</p></div>
+              <div class="kpi"><h3>Net Profit</h3><p>${toInr(profit)}</p></div>
+              <div class="kpi"><h3>Cash In Hand</h3><p>${toInr(Math.round(profit * 0.9))}</p></div>
+            </div>
+
+            <div class="section">
+              <h2>Cash In vs Cash Out</h2>
+              <table>
+                <thead><tr><th>Month</th><th>Cash In</th><th>Cash Out</th></tr></thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+
+            <div class="section">
+              <h2>Expense Category Breakdown</h2>
+              <table>
+                <thead><tr><th>Category</th><th>Amount</th></tr></thead>
+                <tbody>${categories}</tbody>
+              </table>
+            </div>
+          </body>
+        </html>
+      `);
+
+      w.document.close();
+      w.focus();
+      w.print();
+    } catch (error) {
+      console.error("[MONTHLY_REPORT_PDF_EXPORT]", error);
+      alert("Unable to export PDF right now. Please try again.");
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
   return (
     <div className="space-y-5 animate-fade-up">
       <div className="flex items-center gap-1.5 flex-wrap">
@@ -46,16 +159,28 @@ export default function MonthlyReportPage() {
 
       {/* Export */}
       <div className="flex justify-end gap-2">
-        <button className="btn btn-outline btn-sm gap-1.5"><FileDown size={14} /> CSV</button>
-        <button className="btn btn-outline btn-sm gap-1.5"><FileDown size={14} /> PDF</button>
+        <button
+          onClick={handleCsvExport}
+          disabled={isExportingCsv}
+          className="btn btn-outline btn-sm gap-1.5"
+        >
+          <FileDown size={14} /> {isExportingCsv ? "Exporting..." : "CSV"}
+        </button>
+        <button
+          onClick={handlePdfExport}
+          disabled={isExportingPdf}
+          className="btn btn-outline btn-sm gap-1.5"
+        >
+          <FileDown size={14} /> {isExportingPdf ? "Preparing..." : "PDF"}
+        </button>
       </div>
 
       {/* Summary KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Total Income", value: `₹${totalIncome.toLocaleString("en-IN")}`, icon: DollarSign, color: "var(--success)", type: "up" },
-          { label: "Total Expenses", value: `₹${totalExpenses.toLocaleString("en-IN")}`, icon: Receipt, color: "var(--destructive)", type: "down" },
-          { label: "Net Profit", value: `₹${profit.toLocaleString("en-IN")}`, icon: TrendingUp, color: "var(--chart-3)", type: "up" },
+          { label: "Total Income", value: toInr(totalIncome), icon: DollarSign, color: "var(--success)", type: "up" },
+          { label: "Total Expenses", value: toInr(totalExpenses), icon: Receipt, color: "var(--destructive)", type: "down" },
+          { label: "Net Profit", value: toInr(profit), icon: TrendingUp, color: "var(--chart-3)", type: "up" },
           { label: "Cash In Hand", value: `₹${(profit * 0.9).toFixed(0)}`, icon: TrendingDown, color: "var(--chart-1)", type: "neutral" },
         ].map((kpi) => {
           const Icon = kpi.icon;

@@ -59,13 +59,13 @@ const features = [
 
 const testimonials = [
   {
-    quote: "Iteryx completely changed how I manage finances. The insights are incredibly sharp and the UI is beautiful.",
+    quote: "cashFlo completely changed how I manage finances. The insights are incredibly sharp and the UI is beautiful.",
     name: "Aryan Mehta",
     role: "Freelance Designer",
     initials: "AM",
   },
   {
-    quote: "I used to track expenses in spreadsheets. Now I open Iteryx every morning. It's become a daily ritual.",
+    quote: "I used to track expenses in spreadsheets. Now I open cashFlo every morning. It's become a daily ritual.",
     name: "Priya Nair",
     role: "Startup Founder",
     initials: "PN",
@@ -208,7 +208,7 @@ export default function LandingPage() {
 
           {/* Sub */}
           <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 text-balance animate-fade-up delay-200">
-            Iteryx turns raw expense data into actionable intelligence. Track spending, spot patterns, and make confident financial decisions — all in one place.
+            cashFlo turns raw expense data into actionable intelligence. Track spending, spot patterns, and make confident financial decisions, all in one place.
           </p>
 
           {/* CTAs */}
@@ -349,7 +349,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <p className="section-eyebrow mb-3">Testimonials</p>
-            <h2 className="section-title">Loved by finance-conscious people</h2>
+            <h2 className="section-title">Loved by cash-conscious people</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {testimonials.map((t, i) => (
@@ -447,7 +447,7 @@ export default function LandingPage() {
             Start tracking smarter today
           </h2>
           <p className="text-white/80 text-lg mb-8">
-            Join 5,200+ people who have taken control of their finances with Iteryx.
+            Join 5,200+ people who have taken control of their finances with cashFlo.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
@@ -470,7 +470,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2.5">
               <ThemeLogo width={92} height={24} />
-              <span className="text-xs text-muted-foreground ml-1">— Smart Finance</span>
+              <span className="text-xs text-muted-foreground ml-1">- Smart Money OS</span>
             </div>
             <div className="flex items-center gap-5 text-xs text-muted-foreground">
               <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
@@ -478,7 +478,7 @@ export default function LandingPage() {
               <a href="#" className="hover:text-foreground transition-colors">Contact</a>
               <a href="#" className="hover:text-foreground transition-colors">Blog</a>
             </div>
-            <p className="text-xs text-muted-foreground">© 2026 Iteryx. All rights reserved.</p>
+            <p className="text-xs text-muted-foreground">© 2026 cashFlo. All rights reserved.</p>
           </div>
         </div>
       </footer>

@@ -31,7 +31,7 @@ export function buildPrompt(params: {
   // ────────────────────────────────────────────────────────────────────────────
 
   const systemPrompt = `
-You are Iteryx AI, a friendly financial assistant for freelancers and students using the Iteryx platform.
+You are cashFlo AI, a friendly financial assistant for freelancers and students using the cashFlo platform.
 
 Your role is to help users understand their finances including:
 • invoices

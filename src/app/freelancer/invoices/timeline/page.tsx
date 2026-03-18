@@ -7,7 +7,7 @@ const events = [
   { invoiceId: "INV-021", events: [
     { ts: "2026-03-15 14:22", action: "Fully Paid", actor: "System", icon: CheckCircle, color: "var(--success)" },
     { ts: "2026-03-14 09:10", action: "Partial payment ₹22,000 received", actor: "System", icon: DollarSign, color: "var(--chart-3)" },
-    { ts: "2026-03-10 11:30", action: "Reminder sent", actor: "Iteryx System", icon: Bell, color: "var(--warning)" },
+    { ts: "2026-03-10 11:30", action: "Reminder sent", actor: "cashFlo System", icon: Bell, color: "var(--warning)" },
     { ts: "2026-03-01 10:00", action: "Invoice viewed by client", actor: "Nexus Labs", icon: Eye, color: "var(--chart-2)" },
     { ts: "2026-02-28 16:45", action: "Invoice sent", actor: "You", icon: Send, color: "var(--chart-1)" },
     { ts: "2026-02-28 09:12", action: "PDF generated", actor: "You", icon: FileDown, color: "var(--muted-foreground)" },

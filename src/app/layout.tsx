@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "@/components/ui/Toaster";
+import { ThemeFavicon } from "@/components/branding/ThemeFavicon";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -20,15 +21,15 @@ const bricolage = Bricolage_Grotesque({
 
 export const metadata: Metadata = {
   title: {
-    default: "Iteryx — Smart Expense Tracking",
-    template: "%s · Iteryx",
+    default: "cashFlo - Smart Money Tracking",
+    template: "%s - cashFlo",
   },
   description:
-    "Iteryx gives you a clear picture of your spending so you can make smarter financial decisions. Track expenses, view insights, and stay in control.",
+    "cashFlo gives you a clear picture of spending, income, and cash flow so you can make smarter money decisions.",
   keywords: ["expense tracker", "budget", "fintech", "spending insights", "personal finance"],
   openGraph: {
-    title: "Iteryx — Smart Expense Tracking",
-    description: "Track, analyze, and understand your spending with Iteryx.",
+    title: "cashFlo - Smart Money Tracking",
+    description: "Track, analyze, and understand your spending with cashFlo.",
     type: "website",
   },
   icons: {
@@ -50,6 +51,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${bricolage.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <ThemeFavicon />
           <AuthProvider>
             {children}
             <Toaster />

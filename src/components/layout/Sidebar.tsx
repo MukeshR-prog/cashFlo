@@ -41,7 +41,7 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className={`flex items-center gap-1.5 overflow-hidden px-4 h-16 border-b border-sidebar-border ${collapsed ? "justify-center px-0" : ""}`}>
-        <ThemeLogo width={collapsed ? 28 : 104} height={collapsed ? 28 : 28} priority />
+        <ThemeLogo width={collapsed ? 28 : 28} height={collapsed ? 28 : 28} priority />
         {!collapsed && (
           <div className="animate-fade-in">
             <p className="text-sm font-bold text-foreground leading-tight">Finance</p>

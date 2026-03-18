@@ -1,4 +1,4 @@
-# Iteryx Template
+# cashFlo Template
 
 Standard template with:
 - Landing page

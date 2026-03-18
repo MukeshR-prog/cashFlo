@@ -66,7 +66,7 @@ export default function PaymentsPage() {
             {m}
           </button>
         ))}
-        <select className="field-select h-9 w-45 text-xs" value={invoiceFilter} onChange={(e) => setInvoiceFilter(e.target.value)}>
+        <select className="field-select h-10 w-45 text-xs" value={invoiceFilter} onChange={(e) => setInvoiceFilter(e.target.value)}>
           <option value="All">All invoices</option>
           {invoices.map((inv) => (
             <option key={inv} value={inv}>{inv}</option>

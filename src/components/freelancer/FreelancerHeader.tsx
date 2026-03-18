@@ -86,7 +86,7 @@ export function FreelancerHeader({ onMobileMenuToggle, mobileMenuOpen }: HeaderP
 
   const pageInfo = pathname.startsWith("/freelancer/clients/")
     ? { title: "Client Profile", subtitle: "Client details, invoices, and payment history" }
-    : routeTitles[pathname] ?? { title: "Dashboard", subtitle: "Iteryx Freelancer Platform" };
+    : routeTitles[pathname] ?? { title: "Dashboard", subtitle: "cashFlo workspace" };
 
   const initials = user?.name
     ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
@@ -261,7 +261,7 @@ export function FreelancerHeader({ onMobileMenuToggle, mobileMenuOpen }: HeaderP
             <span className="online-dot" />
           </div>
           <div className="hidden sm:block text-left">
-            <p className="text-xs font-semibold text-foreground leading-tight truncate max-w-[96px]">{user?.name ?? "Freelancer"}</p>
+            <p className="text-xs font-semibold text-foreground leading-tight truncate max-w-[96px]">{user?.name ?? "cashFlo User"}</p>
             <p className="text-[10px] text-muted-foreground truncate max-w-[96px]">{user?.email}</p>
           </div>
           <ChevronDown size={13} className={`text-muted-foreground transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`} />
@@ -272,7 +272,7 @@ export function FreelancerHeader({ onMobileMenuToggle, mobileMenuOpen }: HeaderP
             <div className="px-3.5 py-3 border-b border-border">
               <p className="text-xs font-semibold text-foreground">{user?.name}</p>
               <p className="text-[11px] text-muted-foreground truncate">{user?.email}</p>
-              <span className="badge badge-primary text-[10px] mt-1.5">Freelancer Pro</span>
+              <span className="badge badge-primary text-[10px] mt-1.5">cashFlo Pro</span>
             </div>
             <div className="p-1.5 space-y-0.5">
               <Link href="/freelancer/settings" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" onClick={() => setDropdownOpen(false)}>

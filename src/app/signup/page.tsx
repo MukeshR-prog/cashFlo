@@ -17,13 +17,13 @@ const benefits = [
 const SIGNUP_DEMO_ACCOUNTS = [
   {
     label: "Freelancer demo",
-    email: "freelancer@iteryx.com",
+    email: "freelancer@cashflo.com",
     password: "Demo@2024",
     role: "freelancer" as const,
   },
   {
     label: "Student demo",
-    email: "student@iteryx.com",
+    email: "student@cashflo.com",
     password: "Demo@2024",
     role: "student" as const,
   },
@@ -99,9 +99,9 @@ export default function SignupPage() {
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 group relative z-10">
-          <ThemeLogo width={116} height={30} priority className="transition-transform duration-200 group-hover:scale-[1.02]" />
+          <ThemeLogo width={50} height={40} priority className="transition-transform duration-200 group-hover:scale-[1.02]" />
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground leading-none">Finance Platform</p>
+            <p className="text-[20px] font-bold uppercase tracking-[0.18em] text-muted-foreground leading-none">cashFlo Platform</p>
           </div>
         </Link>
 
@@ -121,7 +121,7 @@ export default function SignupPage() {
               <span className="text-gradient">starts here</span>
             </h1>
             <p className="mt-4 text-muted-foreground leading-relaxed text-sm">
-              Join 5,200+ individuals who use Iteryx to understand and optimize their spending habits.
+              Join 5,200+ individuals who use cashFlo to understand and optimize their spending habits.
             </p>
           </div>
 
@@ -161,7 +161,7 @@ export default function SignupPage() {
           </div>
         </div>
 
-        <p className="mt-auto text-xs text-muted-foreground relative z-10">© 2026 Iteryx · Privacy · Terms</p>
+        <p className="mt-auto text-xs text-muted-foreground relative z-10">© 2026 cashFlo · Privacy · Terms</p>
       </div>
 
       {/* ── Right: Form ───────────────────────────────────── */}

@@ -181,7 +181,7 @@ export default function AnalyticsPage() {
           {isDemo && <span className="badge badge-neutral text-[10px]">Demo</span>}
           <div className="relative">
             <select value={dateRange} onChange={(e) => setDateRange(e.target.value)}
-              className="field-input h-9 pr-8 appearance-none cursor-pointer text-sm">
+              className="field-input h-12 pr-8 appearance-none cursor-pointer text-sm">
               {["This month", "Last 3 months", "Last 6 months", "This year"].map((o) => (
                 <option key={o}>{o}</option>
               ))}

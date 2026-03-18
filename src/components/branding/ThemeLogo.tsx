@@ -11,7 +11,7 @@ interface ThemeLogoProps {
 export function ThemeLogo({
   width = 124,
   height = 32,
-  alt = "Iteryx",
+  alt = "cashFlo",
   className,
   priority = false,
 }: ThemeLogoProps) {

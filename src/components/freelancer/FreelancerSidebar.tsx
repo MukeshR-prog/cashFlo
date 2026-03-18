@@ -34,7 +34,7 @@ const navGroups = [
     ],
   },
   {
-    label: "Finance",
+    label: "cashFlo",
     items: [
       { href: "/freelancer/invoices", label: "Invoices", icon: FileText },
       { href: "/freelancer/payments", label: "Payments", icon: CreditCard },
@@ -79,7 +79,7 @@ export function FreelancerSidebar() {
         <ThemeLogo width={collapsed ? 28 : 28} height={collapsed ? 28 : 28} priority />
         {!collapsed && (
           <div className="animate-fade-in">
-            <p className="text-lg font-bold text-foreground leading-tight tracking-tight">Freelancer</p>
+            <p className="text-lg font-bold text-foreground leading-tight tracking-tight">cashFlo</p>
           </div>
         )}
       </div>
@@ -166,7 +166,7 @@ export function FreelancerSidebar() {
               <span className="online-dot" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-foreground truncate leading-tight">{user?.name ?? "Freelancer"}</p>
+              <p className="text-xs font-semibold text-foreground truncate leading-tight">{user?.name ?? "cashFlo User"}</p>
               <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
             </div>
             <span className="badge badge-primary text-[9px] px-1.5 py-0.5 shrink-0">Pro</span>

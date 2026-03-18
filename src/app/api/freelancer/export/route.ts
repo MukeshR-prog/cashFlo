@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    if (type === "full") filename = "freelancer-full-export.csv";
+    if (type === "full") filename = "cashflo-full-export.csv";
 
     return new NextResponse(csv, {
       status: 200,

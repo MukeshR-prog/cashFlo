@@ -25,7 +25,7 @@ export default function CreateInvoicePage() {
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
   const [terms, setTerms] = useState("Payment due within 30 days of invoice date.");
-  const [paymentLink, setPaymentLink] = useState("https://pay.iteryx.com/inv-025");
+  const [paymentLink, setPaymentLink] = useState("https://pay.cashflo.com/inv-025");
   const [methods, setMethods] = useState<string[]>(["UPI", "Bank", "PayPal"]);
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [savingDraft, setSavingDraft] = useState(false);
@@ -333,8 +333,8 @@ export default function CreateInvoicePage() {
             {/* Brand + Invoice No */}
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-xl font-bold text-foreground">Iteryx</p>
-                <p className="text-xs text-muted-foreground">Freelancer Platform</p>
+                <p className="text-xl font-bold text-foreground">cashFlo</p>
+                <p className="text-xs text-muted-foreground">cashFlo Platform</p>
               </div>
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">Invoice</p>

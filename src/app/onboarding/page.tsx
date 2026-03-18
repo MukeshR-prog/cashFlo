@@ -162,9 +162,9 @@ export default function OnboardingPage() {
       <div className="w-full max-w-xl relative z-10">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8 animate-fade-down">
-          <ThemeLogo width={128} height={34} priority />
+          <ThemeLogo width={50} height={40} priority />
           <div className="text-left">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground leading-none">Finance Platform</p>
+            <p className="text-[20px] font-bold uppercase tracking-[0.18em] text-muted-foreground leading-none">cashFlo Platform</p>
           </div>
         </div>
 

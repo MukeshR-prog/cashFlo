@@ -95,7 +95,7 @@ export async function runRAGPipeline(input: RAGInput): Promise<RAGOutput> {
 
   // ── Step 7: Light cleanup ─────────────────────────────────────────────────
   const answer = rawAnswer
-    .replace(/^(AI:|Assistant:|Iteryx AI:)\s*/i, "")
+    .replace(/^(AI:|Assistant:|cashFlo AI:)\s*/i, "")
     .trim();
 
   // ── Step 8: Persist to session memory (MongoDB ChatSession) ──────────────

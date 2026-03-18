@@ -213,7 +213,7 @@ export default function AIChatbot() {
         <div
           className="ai-panel"
           role="dialog"
-          aria-label="Iteryx AI Financial Assistant"
+          aria-label="cashFlo AI Financial Assistant"
         >
           {/* Header */}
           <div className="ai-header">
@@ -222,7 +222,7 @@ export default function AIChatbot() {
                 <Bot size={16} strokeWidth={2} />
               </div>
               <div className="ai-header-text">
-                <span className="ai-header-title">Iteryx AI</span>
+                <span className="ai-header-title">cashFlo AI</span>
                 <span className="ai-header-sub">Financial Assistant · Groq</span>
               </div>
             </div>
