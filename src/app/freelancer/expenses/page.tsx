@@ -119,7 +119,7 @@ export default function FreelancerExpensesPage() {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filter */}
       <div className="premium-card rounded-2xl px-4 py-4 md:px-5 md:py-5 space-y-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
