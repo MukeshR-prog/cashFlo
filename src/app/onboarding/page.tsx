@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { ThemeLogo } from "@/components/branding/ThemeLogo";
 import {
-  TrendingUp, GraduationCap, Briefcase, ArrowRight,
+  GraduationCap, Briefcase, ArrowRight,
   ArrowLeft, CheckCircle, Building2, BookOpen, AlertTriangle,
-  Target, Layers, IndianRupee, ChevronDown,
+  Target, Layers, IndianRupee,
 } from "lucide-react";
 
 type Role = "student" | "freelancer" | "";
@@ -34,6 +35,12 @@ export default function OnboardingPage() {
       router.replace(user.role === "freelancer" ? "/freelancer/dashboard" : "/dashboard");
     }
   }, [router, user]);
+
+  useEffect(() => {
+    if (user?.role === "student" || user?.role === "freelancer") {
+      setRole(user.role);
+    }
+  }, [user]);
 
   const [step, setStep]         = useState<Step>(1);
   const [role, setRole]         = useState<Role>("");
@@ -74,43 +81,76 @@ export default function OnboardingPage() {
   };
 
   const handleSubmit = async () => {
+    if (!role) {
+      setError("Please select your role to continue.");
+      return;
+    }
+
+    if (role === "student" && (!school.trim() || !course.trim())) {
+      setError("Please fill in your school and course.");
+      return;
+    }
+
+    if (role === "freelancer" && !primaryService) {
+      setError("Please select your primary service.");
+      return;
+    }
+
     setSubmitting(true);
     setError("");
     try {
       const profile =
         role === "student"
           ? {
-              school,
-              course,
-              monthlyBudget: monthlyBudget ? Number(monthlyBudget) : null,
+              school: school.trim(),
+              course: course.trim(),
+              monthlyBudget:
+                monthlyBudget && Number(monthlyBudget) >= 0
+                  ? Number(monthlyBudget)
+                  : null,
             }
           : {
               primaryService,
               experienceLevel: expLevel || "beginner",
-              monthlyIncomeGoal: monthlyGoal ? Number(monthlyGoal) : null,
+              monthlyIncomeGoal:
+                monthlyGoal && Number(monthlyGoal) >= 0
+                  ? Number(monthlyGoal)
+                  : null,
               skills: skills.split(",").map((s) => s.trim()).filter(Boolean),
               portfolioUrl: "",
             };
 
-      const res = await fetch("/api/onboarding", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role, profile }),
-      });
+      let res: Response;
+      try {
+        res = await fetch("/api/onboarding", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ role, profile }),
+        });
+      } catch {
+        throw new Error("Unable to reach the server. Please check your connection and try again.");
+      }
 
-      const data = await res.json();
+      const contentType = res.headers.get("content-type") ?? "";
+      const data = contentType.includes("application/json")
+        ? await res.json()
+        : { error: await res.text() };
+
+      if (res.status === 401) {
+        router.replace("/login");
+        throw new Error("Your session expired. Please sign in again.");
+      }
+
       if (!res.ok) throw new Error(data.error || "Onboarding failed");
 
-      await refreshSession();
-      router.push(role === "freelancer" ? "/freelancer/dashboard" : "/dashboard");
+      await refreshSession().catch(() => null);
+      router.replace(role === "freelancer" ? "/freelancer/dashboard" : "/dashboard");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setSubmitting(false);
     }
   };
-
-  const progressPct = ((step - 1) / 2) * 100;
 
   return (
     <main className="min-h-screen bg-mesh flex items-center justify-center px-4 py-10 relative overflow-hidden">
@@ -122,12 +162,9 @@ export default function OnboardingPage() {
       <div className="w-full max-w-xl relative z-10">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8 animate-fade-down">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-sm">
-            <TrendingUp size={20} className="text-primary-foreground" />
-          </div>
+          <ThemeLogo width={128} height={34} priority />
           <div className="text-left">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground leading-none">Iteryx</p>
-            <p className="text-base font-bold text-foreground leading-tight tracking-tight">Finance Platform</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground leading-none">Finance Platform</p>
           </div>
         </div>
 

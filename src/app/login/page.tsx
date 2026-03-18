@@ -2,10 +2,28 @@
 
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { isFirebaseConfigured } from "@/lib/firebase";
+import { ThemeLogo } from "@/components/branding/ThemeLogo";
 import { TrendingUp, ArrowRight, Eye, EyeOff, CheckCircle, AlertTriangle } from "lucide-react";
+
+const LOGIN_DEMO_ACCOUNTS = [
+  {
+    label: "Freelancer demo",
+    email: "freelancer@iteryx.com",
+    password: "Demo@2024",
+    destination: "/freelancer/dashboard",
+    role: "freelancer" as const,
+  },
+  {
+    label: "Student demo",
+    email: "student@iteryx.com",
+    password: "Demo@2024",
+    destination: "/dashboard",
+    role: "student" as const,
+  },
+] as const;
 
 export default function LoginPage() {
   return (
@@ -24,6 +42,7 @@ export default function LoginPage() {
 function LoginContent() {
   const { user, signInWithGoogle, loginWithCredentials, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,6 +61,17 @@ function LoginContent() {
       router.replace(destination);
     }
   }, [loading, router, user]);
+
+  useEffect(() => {
+    const demo = searchParams.get("demo");
+    if (!demo) return;
+
+    const selected = LOGIN_DEMO_ACCOUNTS.find((account) => account.role === demo);
+    if (!selected) return;
+
+    setEmail(selected.email);
+    setPassword(selected.password);
+  }, [searchParams]);
 
   const handleCredentials = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +95,12 @@ function LoginContent() {
     }
   };
 
+  const fillDemoCredentials = (account: (typeof LOGIN_DEMO_ACCOUNTS)[number]) => {
+    setEmail(account.email);
+    setPassword(account.password);
+    setError("");
+  };
+
   const trustPoints = [
     "Bank-grade security & end-to-end encryption",
     "No credit card required to start",
@@ -72,9 +108,9 @@ function LoginContent() {
   ];
 
   return (
-    <main className="min-h-screen bg-mesh flex">
+    <main className="min-h-screen bg-mesh flex overflow-x-hidden">
       {/* ── Left: Brand Panel ─────────────────────────────── */}
-      <div className="hidden lg:flex flex-col justify-between w-[460px] shrink-0 border-r border-border bg-card px-10 py-12 relative overflow-hidden">
+      <div className="hidden lg:flex flex-col gap-10 w-[460px] shrink-0 border-r border-border bg-card px-10 py-12 relative overflow-hidden">
         {/* Background blob */}
         <div className="absolute top-[-80px] right-[-80px] w-72 h-72 rounded-full opacity-10 blur-3xl"
              style={{ background: "radial-gradient(circle, var(--primary), transparent)" }} />
@@ -83,12 +119,9 @@ function LoginContent() {
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 group relative z-10">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all duration-200">
-            <TrendingUp size={18} className="text-primary-foreground" />
-          </div>
+          <ThemeLogo width={116} height={30} priority className="transition-transform duration-200 group-hover:scale-[1.02]" />
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground leading-none">Iteryx</p>
-            <p className="text-sm font-bold text-foreground leading-tight tracking-tight">Finance Platform</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground leading-none">Finance Platform</p>
           </div>
         </Link>
 
@@ -144,21 +177,18 @@ function LoginContent() {
           </div>
         </div>
 
-        <p className="text-xs text-muted-foreground relative z-10">© 2026 Iteryx · Privacy · Terms</p>
+        <p className="mt-auto text-xs text-muted-foreground relative z-10">© 2026 Iteryx · Privacy · Terms</p>
       </div>
 
       {/* ── Right: Form ───────────────────────────────────── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-8 py-12 relative">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-8 py-12 relative overflow-hidden">
         {/* Decorative circle for depth */}
         <div className="absolute top-[-120px] right-[-120px] w-96 h-96 rounded-full opacity-5 blur-3xl pointer-events-none"
              style={{ background: "radial-gradient(circle, var(--primary), transparent)" }} />
 
         {/* Mobile logo */}
         <Link href="/" className="flex items-center gap-2.5 mb-8 lg:hidden">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <TrendingUp size={16} className="text-primary-foreground" />
-          </div>
-          <span className="text-base font-bold text-foreground">Iteryx</span>
+          <ThemeLogo width={108} height={30} priority />
         </Link>
 
         <div className="w-full max-w-md">
@@ -177,6 +207,37 @@ function LoginContent() {
               {error}
             </div>
           )}
+
+          <div className="mb-5 rounded-xl border border-border bg-muted/35 p-4 animate-fade-up">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <p className="text-xs font-semibold text-foreground tracking-tight">Demo Access (Atlas)</p>
+              <span className="badge badge-neutral text-[10px]">Prototype</span>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+              Try the app instantly with ready demo accounts for Student and Freelancer.
+            </p>
+            <div className="space-y-2">
+              {LOGIN_DEMO_ACCOUNTS.map((account) => (
+                <div
+                  key={account.email}
+                  className="rounded-lg border border-border/70 bg-background/80 px-3 py-2"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold text-foreground">{account.label}</p>
+                    <button
+                      type="button"
+                      onClick={() => fillDemoCredentials(account)}
+                      className="text-[11px] font-semibold text-primary hover:underline"
+                    >
+                      Use this account
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{account.email}</p>
+                  <p className="text-xs text-muted-foreground">Password: {account.password}</p>
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* Google button */}
           <button

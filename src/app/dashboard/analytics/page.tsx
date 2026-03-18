@@ -111,17 +111,42 @@ function HeatCell({ value, max }: { value: number; max: number }) {
 export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState("Last 6 months");
 
+  const rangeConfig: Record<string, { monthlyMonths: number; trendMonths: number; heatDays: number; label: string }> = {
+    "This month": { monthlyMonths: 1, trendMonths: 3, heatDays: 31, label: "This month" },
+    "Last 3 months": { monthlyMonths: 3, trendMonths: 3, heatDays: 90, label: "Last 3 months" },
+    "Last 6 months": { monthlyMonths: 6, trendMonths: 6, heatDays: 180, label: "Last 6 months" },
+    "This year": { monthlyMonths: 12, trendMonths: 12, heatDays: 365, label: "This year" },
+  };
+
+  const selectedRange = rangeConfig[dateRange] ?? rangeConfig["Last 6 months"];
+
   const { data: catData,     loading: loadingC, isEmpty: emptyC } =
-    useDashboardData<CategoryData>({ url: "/api/analytics/category",      mockData: MOCK_CATEGORIES, isEmpty: (d) => !d?.categories?.length });
+    useDashboardData<CategoryData>({
+      url: `/api/analytics/category?months=${selectedRange.monthlyMonths}`,
+      mockData: MOCK_CATEGORIES,
+      isEmpty: (d) => !d?.categories?.length,
+    });
 
   const { data: monthlyData, loading: loadingM, isEmpty: emptyM } =
-    useDashboardData<MonthlyData>({ url: "/api/analytics/monthly?months=6", mockData: MOCK_MONTHLY,   isEmpty: (d) => !d?.monthly?.length });
+    useDashboardData<MonthlyData>({
+      url: `/api/analytics/monthly?months=${selectedRange.monthlyMonths}`,
+      mockData: MOCK_MONTHLY,
+      isEmpty: (d) => !d?.monthly?.length,
+    });
 
   const { data: trendData,   loading: loadingT, isEmpty: emptyT } =
-    useDashboardData<TrendData>({ url: "/api/analytics/trends?months=8",   mockData: MOCK_TREND,     isEmpty: (d) => !d?.trend?.length });
+    useDashboardData<TrendData>({
+      url: `/api/analytics/trends?months=${selectedRange.trendMonths}`,
+      mockData: MOCK_TREND,
+      isEmpty: (d) => !d?.trend?.length,
+    });
 
   const { data: heatData,    loading: loadingH, isEmpty: emptyH } =
-    useDashboardData<HeatData>({ url: "/api/analytics/heatmap?days=28",    mockData: MOCK_HEATMAP,   isEmpty: (d) => !d?.heatmap?.length });
+    useDashboardData<HeatData>({
+      url: `/api/analytics/heatmap?days=${selectedRange.heatDays}`,
+      mockData: MOCK_HEATMAP,
+      isEmpty: (d) => !d?.heatmap?.length,
+    });
 
   const categories = catData?.categories ?? MOCK_CATEGORIES.categories;
   const totalCat   = categories.reduce((s, c) => s + c.value, 0);
@@ -230,7 +255,7 @@ export default function AnalyticsPage() {
 
       {/* Row 2: Trend */}
       <div className="chart-card animate-fade-up delay-300">
-        <p className="chart-card-title">8-Month Spending Trend</p>
+        <p className="chart-card-title">Spending Trend</p>
         <p className="chart-card-subtitle">Total monthly expenditure · Line chart</p>
         {loadingT ? (
           <div className="h-[180px] bg-muted/50 animate-pulse rounded-lg mt-2" />
@@ -254,7 +279,7 @@ export default function AnalyticsPage() {
         <div className="flex items-start justify-between mb-4">
           <div>
             <p className="chart-card-title">Daily Spending Intensity</p>
-            <p className="chart-card-subtitle">Heatmap · Last 28 days — hover for amount</p>
+            <p className="chart-card-subtitle">Heatmap · {selectedRange.label} — hover for amount</p>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>Low</span>

@@ -31,6 +31,14 @@ export const metadata: Metadata = {
     description: "Track, analyze, and understand your spending with Iteryx.",
     type: "website",
   },
+  icons: {
+    icon: [
+      { url: "/dark-logo.png", media: "(prefers-color-scheme: light)" },
+      { url: "/white-logo.png", media: "(prefers-color-scheme: dark)" },
+    ],
+    shortcut: "/dark-logo.png",
+    apple: "/dark-logo.png",
+  },
 };
 
 export default function RootLayout({

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { ThemeLogo } from "@/components/branding/ThemeLogo";
 import {
   LayoutDashboard,
   FileText,
@@ -14,7 +15,6 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  TrendingUp,
   Lightbulb,
   Waves,
   BarChart2,
@@ -75,16 +75,11 @@ export function FreelancerSidebar() {
       className={`relative flex shrink-0 flex-col border-r border-sidebar-border sidebar-bg transition-all duration-300 ease-in-out ${collapsed ? "w-[68px]" : "w-[260px]"}`}
     >
       {/* Logo */}
-      <div className={`flex items-center gap-3 h-[60px] border-b border-sidebar-border shrink-0 px-4 ${collapsed ? "justify-center px-0" : ""}`}>
-        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-sm" style={{ boxShadow: "0 2px 8px color-mix(in oklch, var(--primary) 30%, transparent)" }}>
-          <TrendingUp size={16} className="text-primary-foreground" />
-        </div>
+      <div className={`flex items-center gap-1.5 overflow-hidden h-[60px] border-b border-sidebar-border shrink-0 px-4 ${collapsed ? "justify-center px-0" : ""}`}>
+        <ThemeLogo width={collapsed ? 28 : 28} height={collapsed ? 28 : 28} priority />
         {!collapsed && (
           <div className="animate-fade-in">
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground leading-none">
-              Iteryx
-            </p>
-            <p className="text-sm font-bold text-foreground leading-tight tracking-tight">Freelancer</p>
+            <p className="text-lg font-bold text-foreground leading-tight tracking-tight">Freelancer</p>
           </div>
         )}
       </div>

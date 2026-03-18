@@ -1,23 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FileText, ArrowUpRight, Plus, Filter, Download } from "lucide-react";
 import Link from "next/link";
+import { toast } from "@/components/ui/Toaster";
 
 const STATUS_TABS = ["All", "Draft", "Sent", "Viewed", "Due Soon", "Overdue", "Partial", "Paid"] as const;
 type Status = typeof STATUS_TABS[number];
 
-const invoices = [
-  { id: "INV-024", client: "Pixel Studio", amount: 28000, dueDate: "2026-03-25", status: "Sent", sentDate: "2026-03-10", paid: 0, paymentDate: "—", createdDate: "2026-03-09", updatedDate: "2026-03-10" },
-  { id: "INV-023", client: "CodeBase Inc.", amount: 15500, dueDate: "2026-03-28", status: "Due Soon", sentDate: "2026-03-08", paid: 0, paymentDate: "—", createdDate: "2026-03-07", updatedDate: "2026-03-08" },
-  { id: "INV-022", client: "Arjun Dev", amount: 9200, dueDate: "2026-03-30", status: "Partial", sentDate: "2026-03-05", paid: 5000, paymentDate: "2026-03-10", createdDate: "2026-03-03", updatedDate: "2026-03-10" },
-  { id: "INV-021", client: "Nexus Labs", amount: 42000, dueDate: "2026-03-15", status: "Paid", sentDate: "2026-02-28", paid: 42000, paymentDate: "2026-03-15", createdDate: "2026-02-26", updatedDate: "2026-03-15" },
-  { id: "INV-020", client: "TrueVen Co.", amount: 18500, dueDate: "2026-03-10", status: "Overdue", sentDate: "2026-02-22", paid: 0, paymentDate: "—", createdDate: "2026-02-20", updatedDate: "2026-03-12" },
-  { id: "INV-019", client: "Nova Systems", amount: 7800, dueDate: "—", status: "Draft", sentDate: "—", paid: 0, paymentDate: "—", createdDate: "2026-03-14", updatedDate: "2026-03-16" },
-  { id: "INV-018", client: "Riya Mehta", amount: 12000, dueDate: "2026-02-28", status: "Overdue", sentDate: "2026-02-10", paid: 0, paymentDate: "—", createdDate: "2026-02-08", updatedDate: "2026-03-06" },
-  { id: "INV-017", client: "BuildZen", amount: 33000, dueDate: "2026-02-20", status: "Paid", sentDate: "2026-02-01", paid: 33000, paymentDate: "2026-02-20", createdDate: "2026-01-25", updatedDate: "2026-02-20" },
-  { id: "INV-016", client: "Synapse Media", amount: 5500, dueDate: "—", status: "Viewed", sentDate: "2026-03-01", paid: 0, paymentDate: "—", createdDate: "2026-02-27", updatedDate: "2026-03-02" },
-];
+interface InvoiceRow {
+  id: string;
+  clientId: string;
+  clientName?: string;
+  invoiceNumber: string;
+  issueDate: string;
+  dueDate: string;
+  totalAmount: number;
+  amountPaid: number;
+  amountDue: number;
+  status: "draft" | "sent" | "due" | "overdue" | "partially_paid" | "paid";
+  notes?: string;
+}
+
+const labelToApiStatus: Record<Exclude<Status, "All" | "Viewed" | "Due Soon" | "Partial">, InvoiceRow["status"]> = {
+  Draft: "draft",
+  Sent: "sent",
+  Overdue: "overdue",
+  Paid: "paid",
+};
 
 const statusStyle: Record<string, string> = {
   Draft: "badge-neutral",
@@ -35,17 +45,89 @@ function fmtAmount(n: number) {
 
 export default function FreelancerInvoicesPage() {
   const [activeTab, setActiveTab] = useState<Status>("All");
+  const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = activeTab === "All"
-    ? invoices
-    : invoices.filter((inv) => inv.status === activeTab);
+  const fetchInvoices = async (status?: string) => {
+    setLoading(true);
+    try {
+      const query = status ? `?status=${encodeURIComponent(status)}` : "";
+      const res = await fetch(`/api/invoices${query}`, { cache: "no-store" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Failed to load invoices" }));
+        toast.error("Could not load invoices", err.error ?? "Please try again.");
+        setInvoices([]);
+        return;
+      }
+      const data = await res.json();
+      setInvoices(data.invoices ?? []);
+    } catch {
+      toast.error("Network error", "Could not reach the server.");
+      setInvoices([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const mappedStatus = labelToApiStatus[activeTab as Exclude<Status, "All" | "Viewed" | "Due Soon" | "Partial">];
+    void fetchInvoices(activeTab === "All" || !mappedStatus ? undefined : mappedStatus);
+  }, [activeTab]);
+
+  const filtered = useMemo(
+    () =>
+      invoices.filter((inv) => {
+        if (activeTab === "All") return true;
+        if (activeTab === "Viewed") return inv.status === "sent";
+        if (activeTab === "Due Soon") return inv.status === "due";
+        if (activeTab === "Partial") return inv.status === "partially_paid";
+        if (activeTab === "Draft") return inv.status === "draft";
+        if (activeTab === "Sent") return inv.status === "sent";
+        if (activeTab === "Overdue") return inv.status === "overdue";
+        if (activeTab === "Paid") return inv.status === "paid";
+        return true;
+      }),
+    [invoices, activeTab]
+  );
+
+  const selected = filtered.find((inv) => inv.id === selectedInvoiceId) ?? filtered[0] ?? null;
+
+  const handleExport = async () => {
+    try {
+      const res = await fetch("/api/freelancer/export?type=invoices&format=csv", { cache: "no-store" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Export failed" }));
+        toast.error("Export failed", err.error ?? "Please try again.");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "invoices.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Export ready", "Invoices CSV downloaded.");
+    } catch {
+      toast.error("Network error", "Could not reach the server.");
+    }
+  };
 
   const summary = {
     total: invoices.length,
-    unpaid: invoices.filter((i) => ["Sent", "Due Soon", "Partial"].includes(i.status)).length,
-    overdue: invoices.filter((i) => i.status === "Overdue").length,
-    paid: invoices.filter((i) => i.status === "Paid").length,
+    unpaid: invoices.filter((i) => ["sent", "due", "partially_paid"].includes(i.status)).length,
+    overdue: invoices.filter((i) => i.status === "overdue").length,
+    paid: invoices.filter((i) => i.status === "paid").length,
   };
+
+  const toDisplayStatus = (status: InvoiceRow["status"]) => {
+    if (status === "partially_paid") return "Partial";
+    if (status === "due") return "Due Soon";
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
+  const fmtDate = (iso: string) => new Date(iso).toISOString().split("T")[0];
 
   return (
     <div className="space-y-5">
@@ -68,7 +150,7 @@ export default function FreelancerInvoicesPage() {
       <div className="flex items-center justify-between animate-fade-up">
         <div />
         <div className="flex items-center gap-2">
-          <button className="btn btn-outline btn-sm gap-1.5">
+          <button className="btn btn-outline btn-sm gap-1.5" onClick={handleExport}>
             <Download size={14} /> Export
           </button>
           <Link href="/freelancer/invoices/create" className="btn btn-primary btn-sm gap-1.5">
@@ -129,25 +211,27 @@ export default function FreelancerInvoicesPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((inv) => (
-              <tr key={inv.id}>
-                <td className="font-semibold text-primary">{inv.id}</td>
-                <td className="font-medium text-foreground">{inv.client}</td>
-                <td className="stat-number font-semibold">{fmtAmount(inv.amount)}</td>
-                <td className="text-muted-foreground text-xs">{inv.dueDate}</td>
+            {loading ? (
+              <tr><td colSpan={12} className="text-center py-8 text-sm text-muted-foreground">Loading invoices...</td></tr>
+            ) : filtered.map((inv) => (
+              <tr key={inv.id} className={selected?.id === inv.id ? "bg-primary/5" : ""}>
+                <td className="font-semibold text-primary">{inv.invoiceNumber}</td>
+                <td className="font-medium text-foreground">{inv.clientName ?? "Unknown"}</td>
+                <td className="stat-number font-semibold">{fmtAmount(inv.totalAmount)}</td>
+                <td className="text-muted-foreground text-xs">{fmtDate(inv.dueDate)}</td>
                 <td>
-                  <span className={`badge ${statusStyle[inv.status]}`}>{inv.status}</span>
+                  <span className={`badge ${statusStyle[toDisplayStatus(inv.status)]}`}>{toDisplayStatus(inv.status)}</span>
                 </td>
-                <td className="text-xs text-muted-foreground">{inv.sentDate}</td>
-                <td className="text-xs text-muted-foreground">{inv.paymentDate}</td>
-                <td className="text-xs text-muted-foreground">{inv.createdDate}</td>
-                <td className="text-xs text-muted-foreground">{inv.updatedDate}</td>
-                <td className="stat-number text-success">{inv.paid > 0 ? fmtAmount(inv.paid) : "—"}</td>
+                <td className="text-xs text-muted-foreground">{fmtDate(inv.issueDate)}</td>
+                <td className="text-xs text-muted-foreground">{inv.amountPaid > 0 ? "Received" : "—"}</td>
+                <td className="text-xs text-muted-foreground">{fmtDate(inv.issueDate)}</td>
+                <td className="text-xs text-muted-foreground">{fmtDate(inv.issueDate)}</td>
+                <td className="stat-number text-success">{inv.amountPaid > 0 ? fmtAmount(inv.amountPaid) : "—"}</td>
                 <td className="stat-number text-foreground">
-                  {inv.amount - inv.paid > 0 ? fmtAmount(inv.amount - inv.paid) : "—"}
+                  {inv.amountDue > 0 ? fmtAmount(inv.amountDue) : "—"}
                 </td>
                 <td>
-                  <button className="text-xs text-primary hover:underline flex items-center gap-0.5">
+                  <button className="text-xs text-primary hover:underline flex items-center gap-0.5" onClick={() => setSelectedInvoiceId(inv.id)}>
                     View <ArrowUpRight size={11} />
                   </button>
                 </td>
@@ -162,6 +246,27 @@ export default function FreelancerInvoicesPage() {
           </div>
         )}
       </div>
+
+      {selected && (
+        <div className="chart-card animate-fade-up delay-200">
+          <p className="chart-card-title">Selected Invoice</p>
+          <p className="chart-card-subtitle">Details update when you choose a different row</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground">Invoice</p>
+              <p className="font-semibold text-foreground">{selected.invoiceNumber}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Client</p>
+              <p className="font-semibold text-foreground">{selected.clientName ?? "Unknown"}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Status</p>
+              <p className="font-semibold text-foreground">{toDisplayStatus(selected.status)}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

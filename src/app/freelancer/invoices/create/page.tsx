@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Save, Send, FileDown, Eye, Trash2, User } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "@/components/ui/Toaster";
 
-const CATEGORIES = ["Software", "Design", "Development", "Consulting", "Marketing", "Content", "Support"];
-const CLIENTS = ["Pixel Studio", "CodeBase Inc.", "Arjun Dev", "Nexus Labs", "TrueVen Co.", "Nova Systems"];
+interface ClientOption {
+  id: string;
+  name: string;
+}
 
 interface LineItem {
   id: number;
@@ -15,16 +19,38 @@ interface LineItem {
 }
 
 export default function CreateInvoicePage() {
+  const router = useRouter();
   const [client, setClient] = useState("");
-  const [invoiceNo] = useState("INV-025");
+  const [invoiceNo] = useState(`INV-${new Date().getTime().toString().slice(-6)}`);
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
   const [terms, setTerms] = useState("Payment due within 30 days of invoice date.");
   const [paymentLink, setPaymentLink] = useState("https://pay.iteryx.com/inv-025");
   const [methods, setMethods] = useState<string[]>(["UPI", "Bank", "PayPal"]);
+  const [clients, setClients] = useState<ClientOption[]>([]);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [sending, setSending] = useState(false);
   const [items, setItems] = useState<LineItem[]>([
     { id: 1, description: "", qty: 1, rate: 0 },
   ]);
+
+  useEffect(() => {
+    const loadClients = async () => {
+      try {
+        const res = await fetch("/api/clients", { cache: "no-store" });
+        if (!res.ok) {
+          setClients([]);
+          return;
+        }
+        const data = await res.json();
+        setClients((data.clients ?? []).map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })));
+      } catch {
+        setClients([]);
+      }
+    };
+
+    void loadClients();
+  }, []);
 
   const addItem = () => {
     setItems((prev) => [...prev, { id: Date.now(), description: "", qty: 1, rate: 0 }]);
@@ -44,6 +70,72 @@ export default function CreateInvoicePage() {
   const total = subtotal + tax;
 
   const fmt = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+
+  const buildPayload = (status: "draft" | "sent") => {
+    const cleanItems = items
+      .filter((i) => i.description.trim() && i.qty > 0 && i.rate > 0)
+      .map((i) => ({ description: i.description.trim(), quantity: i.qty, unitPrice: i.rate }));
+
+    if (!client) {
+      throw new Error("Please select a client.");
+    }
+    if (!dueDate) {
+      throw new Error("Please select a due date.");
+    }
+    if (cleanItems.length === 0) {
+      throw new Error("Add at least one valid line item.");
+    }
+
+    return {
+      clientId: client,
+      invoiceNumber: invoiceNo,
+      issueDate: new Date().toISOString(),
+      dueDate: new Date(dueDate).toISOString(),
+      items: cleanItems,
+      paymentLink,
+      notes: [notes, terms ? `Terms: ${terms}` : "", methods.length ? `Methods: ${methods.join(", ")}` : ""]
+        .filter(Boolean)
+        .join("\n"),
+      status,
+    };
+  };
+
+  const saveInvoice = async (status: "draft" | "sent") => {
+    try {
+      const payload = buildPayload(status);
+      const res = await fetch("/api/invoices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Failed to save invoice" }));
+        throw new Error(err.error ?? "Failed to save invoice");
+      }
+
+      toast.success(status === "draft" ? "Draft saved" : "Invoice sent", `${invoiceNo} saved successfully.`);
+      router.push("/freelancer/invoices");
+    } catch (error) {
+      toast.error("Action failed", error instanceof Error ? error.message : "Please try again.");
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    setSavingDraft(true);
+    await saveInvoice("draft");
+    setSavingDraft(false);
+  };
+
+  const handleSendInvoice = async () => {
+    setSending(true);
+    await saveInvoice("sent");
+    setSending(false);
+  };
+
+  const handleDownloadPdf = () => {
+    window.print();
+  };
 
   return (
     <div className="space-y-5 animate-fade-up">
@@ -83,13 +175,14 @@ export default function CreateInvoicePage() {
                 onChange={(e) => setClient(e.target.value)}
               >
                 <option value="">Select client...</option>
-                {CLIENTS.map((c) => <option key={c}>{c}</option>)}
+                {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div>
               <label className="field-label">Due Date</label>
               <input
                 type="date"
+                placeholder="Select due date"
                 className="field-input"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
@@ -220,9 +313,9 @@ export default function CreateInvoicePage() {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2">
-          <button className="btn btn-outline gap-2 flex-1"><Save size={15} /> Save Draft</button>
-          <button className="btn btn-outline gap-2 flex-1"><FileDown size={15} /> PDF</button>
-          <button className="btn btn-primary gap-2 flex-1"><Send size={15} /> Send Invoice</button>
+          <button className="btn btn-outline gap-2 flex-1" onClick={handleSaveDraft} disabled={savingDraft || sending}><Save size={15} /> {savingDraft ? "Saving..." : "Save Draft"}</button>
+          <button className="btn btn-outline gap-2 flex-1" onClick={handleDownloadPdf}><FileDown size={15} /> Download PDF</button>
+          <button className="btn btn-primary gap-2 flex-1" onClick={handleSendInvoice} disabled={savingDraft || sending}><Send size={15} /> {sending ? "Sending..." : "Send Invoice"}</button>
         </div>
       </div>
 
@@ -254,7 +347,7 @@ export default function CreateInvoicePage() {
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Bill To</p>
               <div className="flex items-center gap-2">
                 <User size={14} className="text-muted-foreground" />
-                <p className="text-sm font-semibold text-foreground">{client || "Client Name"}</p>
+                <p className="text-sm font-semibold text-foreground">{clients.find((c) => c.id === client)?.name || "Client Name"}</p>
               </div>
               {dueDate && (
                 <p className="text-xs text-muted-foreground mt-1">Due: {dueDate}</p>

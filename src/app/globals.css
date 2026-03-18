@@ -231,6 +231,8 @@
   html {
     scroll-behavior: smooth;
     text-rendering: optimizeLegibility;
+    max-width: 100%;
+    overflow-x: clip;
   }
 
   body {
@@ -239,6 +241,8 @@
     font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -436,6 +440,43 @@
     box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 15%, transparent);
   }
 
+  /* Date input specific styling */
+  .field-input[type="date"] {
+    @apply px-2.5 py-2 text-xs;
+    background-color: var(--card);
+    color: var(--foreground) !important;
+    width: 130px !important;
+    font-size: 0.75rem;
+    cursor: pointer;
+    color-scheme: light dark;
+  }
+
+  .field-input[type="date"]::-webkit-datetime-edit,
+  .field-input[type="date"]::-webkit-datetime-edit-year-field,
+  .field-input[type="date"]::-webkit-datetime-edit-month-field,
+  .field-input[type="date"]::-webkit-datetime-edit-day-field,
+  .field-input[type="date"]::-webkit-datetime-edit-text {
+    color: var(--foreground);
+  }
+
+  .field-input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    border-radius: 3px;
+    margin-right: 2px;
+    padding: 2px 4px;
+    filter: brightness(0.8) contrast(1.2);
+  }
+
+  .dark .field-input[type="date"] {
+    color: var(--foreground) !important;
+    background-color: var(--card);
+    border-color: color-mix(in oklch, var(--border) 85%, var(--foreground));
+  }
+
+  .dark .field-input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(1.35) contrast(1.2);
+  }
+
   .field-label {
     @apply block text-sm font-medium text-foreground mb-1.5;
     letter-spacing: -0.01em;
@@ -446,11 +487,21 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
     outline: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    color: var(--foreground) !important;
+  }
+
+  .dark .field-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23d1d5db' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   }
 
   .field-select:focus {
     border-color: var(--ring);
     box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 15%, transparent);
+  }
+
+  .field-select option {
+    color: var(--foreground);
+    background: var(--card);
   }
 
   .premium-alert {
@@ -913,6 +964,7 @@
     filter: blur(72px);
     opacity: 0.12;
     animation: float 7s ease-in-out infinite;
+    pointer-events: none;
   }
 
   /* ── Sidebar gradient bg ────────────────────────────── */
@@ -943,15 +995,51 @@
   opacity: 0.4;
 }
 
+.dark .recharts-cartesian-grid line {
+  opacity: 0.62;
+}
+
 .recharts-text {
   fill: var(--muted-foreground) !important;
   font-family: var(--font-sans), sans-serif !important;
   font-size: 11px !important;
 }
 
+.dark .recharts-text {
+  fill: color-mix(in oklch, var(--foreground) 92%, var(--muted-foreground)) !important;
+  font-weight: 500 !important;
+}
+
 .recharts-legend-item-text {
   color: var(--muted-foreground) !important;
   font-size: 12px !important;
+}
+
+.dark .recharts-legend-item-text {
+  color: color-mix(in oklch, var(--foreground) 95%, var(--muted-foreground)) !important;
+  font-weight: 500 !important;
+}
+
+/* Enhanced dark mode readability for chart labels */
+.dark .recharts-xAxis text,
+.dark .recharts-yAxis text {
+  fill: color-mix(in oklch, var(--foreground) 90%, var(--muted-foreground)) !important;
+  font-weight: 500 !important;
+}
+
+/* Brighter grid lines in dark mode for better visibility */
+.dark .recharts-cartesian-grid line {
+  opacity: 0.75;
+}
+
+/* Tooltip visibility in dark mode */
+.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: color-mix(in oklch, var(--card) 110%, var(--primary) 5%) !important;
+  border-color: color-mix(in oklch, var(--primary) 30%, var(--border)) !important;
+}
+
+.dark .recharts-tooltip-label {
+  color: color-mix(in oklch, var(--foreground) 95%, transparent) !important;
 }
 
 /* ============================================================
@@ -966,6 +1054,33 @@
 /* Don't slow down keyframe animations */
 [class*="animate-"] {
   transition-property: none;
+}
+
+/* ============================================================
+   DARK MODE TEXT CONTRAST ENHANCEMENT
+   ============================================================ */
+.dark {
+  --foreground: oklch(0.9400 0.0100 255);
+  --muted-foreground: oklch(0.6800 0.0150 255);
+  --card-foreground: oklch(0.9400 0.0100 255);
+}
+
+.dark p, .dark div, .dark span, .dark a,
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: var(--foreground);
+}
+
+.dark .text-muted-foreground {
+  color: var(--muted-foreground) !important;
+}
+
+.dark .card {
+  background: oklch(0.1750 0.0125 258);
+}
+
+.dark .chart-card,
+.dark .data-table tbody tr {
+  background: oklch(0.1750 0.0125 258);
 }
 
 @media (prefers-reduced-motion: reduce) {

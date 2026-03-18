@@ -8,11 +8,12 @@ import { SESSION_COOKIE_NAME } from "@/app/api/_lib/auth/constants";
 const studentProfileSchema = z.object({
   school: z.string().min(1),
   course: z.string().min(1),
+  monthlyBudget: z.union([z.number().nonnegative(), z.null()]).optional(),
   graduationYear: z.union([z.number().int().min(2000).max(2100), z.null()]).optional(),
 });
 
 const freelancerProfileSchema = z.object({
-  primaryService: z.string().min(1).optional(),
+  primaryService: z.string().min(1),
   experienceLevel: z.enum(["beginner", "intermediate", "expert"]).optional(),
   monthlyIncomeGoal: z.union([z.number().nonnegative(), z.null()]).optional(),
   skills: z.array(z.string().min(1)).optional().default([]),

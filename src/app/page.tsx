@@ -3,8 +3,9 @@
 
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { ThemeLogo } from "@/components/branding/ThemeLogo";
 import {
-  ArrowRight, TrendingUp, BarChart3, Shield, Zap, CheckCircle,
+  ArrowRight, BarChart3, Shield, Zap, CheckCircle,
   LineChart, Receipt, Brain, ChevronRight, Star, Sparkles,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -128,16 +129,13 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* ── Navbar ────────────────────────────────────────── */}
       <nav className={`sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl transition-all duration-300 ${scrolled ? "border-border shadow-sm" : "border-transparent"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-16 gap-6">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all duration-200">
-              <TrendingUp size={16} className="text-primary-foreground" />
-            </div>
-            <span className="text-base font-bold text-foreground tracking-tight">Iteryx</span>
+            <ThemeLogo width={112} height={30} priority className="transition-transform duration-200 group-hover:scale-[1.02]" />
           </Link>
 
           {/* Nav links */}
@@ -471,10 +469,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
-                <TrendingUp size={12} className="text-primary-foreground" />
-              </div>
-              <span className="text-sm font-bold text-foreground">Iteryx</span>
+              <ThemeLogo width={92} height={24} />
               <span className="text-xs text-muted-foreground ml-1">— Smart Finance</span>
             </div>
             <div className="flex items-center gap-5 text-xs text-muted-foreground">

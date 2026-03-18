@@ -21,8 +21,7 @@ export default function PaymentsPage() {
   const [modeFilter, setModeFilter] = useState("All");
   const [invoiceFilter, setInvoiceFilter] = useState("All");
   const [payerFilter, setPayerFilter] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
 
   const invoices = Array.from(new Set(payments.map((p) => p.invoice)));
 
@@ -34,9 +33,8 @@ export default function PaymentsPage() {
       p.payerName.toLowerCase().includes(payerFilter.toLowerCase()) ||
       p.payerEmail.toLowerCase().includes(payerFilter.toLowerCase()) ||
       p.payerPhone.includes(payerFilter);
-    const fromMatch = !fromDate || p.date >= fromDate;
-    const toMatch = !toDate || p.date <= toDate;
-    return modeMatch && invoiceMatch && payerMatch && fromMatch && toMatch;
+    const dateMatch = !dateFilter || p.date === dateFilter;
+    return modeMatch && invoiceMatch && payerMatch && dateMatch;
   });
 
   return (
@@ -55,7 +53,7 @@ export default function PaymentsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="chart-card p-3 flex items-center gap-2 flex-wrap">
         <Filter size={14} className="text-muted-foreground" />
         {["All", "UPI", "Bank", "PayPal"].map((m) => (
           <button
@@ -68,20 +66,28 @@ export default function PaymentsPage() {
             {m}
           </button>
         ))}
-        <select className="field-input w-[160px] h-9 text-xs" value={invoiceFilter} onChange={(e) => setInvoiceFilter(e.target.value)}>
+        <select className="field-select h-9 w-45 text-xs" value={invoiceFilter} onChange={(e) => setInvoiceFilter(e.target.value)}>
           <option value="All">All invoices</option>
           {invoices.map((inv) => (
             <option key={inv} value={inv}>{inv}</option>
           ))}
         </select>
         <input
-          className="field-input h-9 w-[220px] text-xs"
+          className="field-input h-9 text-xs px-3"
           placeholder="Filter payer"
           value={payerFilter}
           onChange={(e) => setPayerFilter(e.target.value)}
+          style={{ width: '200px' }}
         />
-        <input className="field-input h-9 text-xs" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-        <input className="field-input h-9 text-xs" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+        <span className="text-[11px] font-semibold text-muted-foreground">Date</span>
+        <input
+          className="field-input h-9"
+          type="date"
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value)}
+          aria-label="Filter by date"
+          title="Filter by date"
+        />
       </div>
 
       {/* Table */}

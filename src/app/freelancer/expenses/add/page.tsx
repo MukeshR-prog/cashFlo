@@ -3,21 +3,53 @@
 import { useState } from "react";
 import { Save } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "@/components/ui/Toaster";
 
 const categories = ["Software", "Travel", "Internet", "Hardware", "Marketing", "Food", "Health", "Communication", "Misc"];
 const types = ["BUSINESS", "PERSONAL"];
 
 export default function AddExpensePage() {
+  const router = useRouter();
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("Software");
   const [date, setDate] = useState("");
   const [notes, setNotes] = useState("");
   const [type, setType] = useState<"BUSINESS" | "PERSONAL">("BUSINESS");
+  const [saving, setSaving] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Expense saved: ${title} — ₹${amount} (${type})`);
+    setSaving(true);
+    try {
+      const res = await fetch("/api/expenses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          amount: Number(amount),
+          category,
+          date,
+          type,
+          paymentMode: "UPI",
+          notes,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Failed to save expense" }));
+        toast.error("Could not save expense", err.error ?? "Please try again.");
+        return;
+      }
+
+      toast.success("Expense saved", `${title} added successfully.`);
+      router.push("/freelancer/expenses");
+    } catch {
+      toast.error("Network error", "Could not reach the server.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -72,7 +104,7 @@ export default function AddExpensePage() {
           </div>
           <div>
             <label className="field-label">Date</label>
-            <input type="date" className="field-input" value={date} onChange={(e) => setDate(e.target.value)} required />
+            <input type="date" placeholder="Select date" className="field-input" value={date} onChange={(e) => setDate(e.target.value)} required />
           </div>
         </div>
 
@@ -88,8 +120,8 @@ export default function AddExpensePage() {
           <textarea className="field-input h-20 resize-none" placeholder="Additional notes..." value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
 
-        <button type="submit" className="btn btn-primary w-full gap-2">
-          <Save size={15} /> Save Expense
+        <button type="submit" className="btn btn-primary w-full gap-2" disabled={saving}>
+          <Save size={15} /> {saving ? "Saving..." : "Save Expense"}
         </button>
       </form>
       </div>

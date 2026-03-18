@@ -37,12 +37,29 @@ export async function GET(req: NextRequest) {
     const query: Record<string, unknown> = { userId: auth.userId };
     if (status) query.status = status;
 
-    const invoices = await Invoice.find(query).sort({ createdAt: -1 }).lean();
+    const invoices = await Invoice.find(query)
+      .populate("clientId", "name email")
+      .sort({ createdAt: -1 })
+      .lean();
 
     return NextResponse.json({
-      invoices: invoices.map((invoice) => ({
+      invoices: invoices.map((invoice) => {
+        const client = invoice.clientId as
+          | mongoose.Types.ObjectId
+          | { _id?: mongoose.Types.ObjectId; name?: string; email?: string }
+          | null;
+
+        const clientId =
+          client && typeof client === "object" && "_id" in client && client._id
+            ? client._id.toString()
+            : client
+              ? String(client)
+              : "";
+
+        return {
         id: invoice._id.toString(),
-        clientId: invoice.clientId.toString(),
+        clientId,
+        clientName: (client as { name?: string } | null)?.name ?? "Unknown",
         invoiceNumber: invoice.invoiceNumber,
         issueDate: invoice.issueDate,
         dueDate: invoice.dueDate,
@@ -53,7 +70,8 @@ export async function GET(req: NextRequest) {
         status: invoice.status,
         paymentLink: invoice.paymentLink ?? null,
         notes: invoice.notes ?? "",
-      })),
+      };
+      }),
     });
   } catch (error) {
     console.error("[INVOICES_GET]", error);

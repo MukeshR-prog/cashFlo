@@ -61,6 +61,7 @@ export default function ExpensesPage() {
   const [searchQuery, setSearchQuery]       = useState("");
   const [showAddForm, setShowAddForm]       = useState(false);
   const [sortAsc, setSortAsc]              = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
 
   // Form state
   const [amount, setAmount]           = useState("");
@@ -87,39 +88,111 @@ export default function ExpensesPage() {
   const expenses = (data?.expenses ?? []).sort((a, b) =>
     sortAsc ? a.amount - b.amount : b.amount - a.amount
   );
+
+  const filteredExpenses = expenses.filter((expense) => {
+    const matchesCategory = selectedCategory === "All" || expense.category === selectedCategory;
+    const q = searchQuery.trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      expense.title.toLowerCase().includes(q) ||
+      expense.category.toLowerCase().includes(q) ||
+      (expense.notes ?? "").toLowerCase().includes(q);
+    return matchesCategory && matchesSearch;
+  });
+
   const pagination = data?.pagination ?? MOCK_EXPENSES.pagination;
+
+  const handleExport = async () => {
+    try {
+      const res = await fetch("/api/reports/export?format=csv", { cache: "no-store" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Export failed" }));
+        toast.error("Export failed", err.error ?? "Could not generate CSV.");
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "expenses-report.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Export ready", "Downloaded expenses CSV.");
+    } catch {
+      toast.error("Export failed", "Could not reach the server.");
+    }
+  };
 
   // ── Add expense ──────────────────────────────────────────────────────────
   const handleAddExpense = async () => {
     if (!amount || !date) return;
     setSubmitting(true);
     try {
-      const res = await fetch("/api/expenses", {
-        method: "POST",
+      const payload = {
+        title: description || category,
+        amount: parseFloat(amount),
+        category,
+        date,
+        paymentMode,
+        notes,
+        type: "PERSONAL",
+      };
+
+      const endpoint = editingExpense ? `/api/expenses/${editingExpense.id}` : "/api/expenses";
+      const method = editingExpense ? "PUT" : "POST";
+
+      const res = await fetch(endpoint, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: description || category,
-          amount: parseFloat(amount),
-          category,
-          date,
-          paymentMode,
-          notes,
-          type: "PERSONAL",
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const err = await res.json();
-        toast.error("Failed to add expense", err.error ?? "Unknown error");
+        toast.error(editingExpense ? "Failed to update expense" : "Failed to add expense", err.error ?? "Unknown error");
         return;
       }
-      toast.success("Expense added", `₹${parseFloat(amount).toLocaleString("en-IN")} · ${category}`);
+      toast.success(
+        editingExpense ? "Expense updated" : "Expense added",
+        `₹${parseFloat(amount).toLocaleString("en-IN")} · ${category}`
+      );
       setShowAddForm(false);
+      setEditingExpense(null);
       setAmount(""); setDescription(""); setNotes("");
       void refetch();
     } catch {
       toast.error("Network error", "Could not reach the server.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleEditExpense = (expense: Expense) => {
+    setEditingExpense(expense);
+    setAmount(String(expense.amount));
+    setDate(new Date(expense.date).toISOString().split("T")[0]);
+    setCategory(expense.category);
+    setDescription(expense.title);
+    setPaymentMode(expense.paymentMode ?? "UPI");
+    setNotes(expense.notes ?? "");
+    setShowAddForm(true);
+  };
+
+  const handleDeleteExpense = async (expense: Expense) => {
+    const confirmed = window.confirm(`Delete \"${expense.title}\"?`);
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/expenses/${expense.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Delete failed" }));
+        toast.error("Failed to delete expense", err.error ?? "Unknown error");
+        return;
+      }
+      toast.success("Expense deleted", expense.title);
+      void refetch();
+    } catch {
+      toast.error("Network error", "Could not reach the server.");
     }
   };
 
@@ -134,7 +207,7 @@ export default function ExpensesPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="btn btn-outline btn-sm gap-1.5">
+          <button className="btn btn-outline btn-sm gap-1.5" onClick={handleExport}>
             <Download size={14} /> Export
           </button>
           <button onClick={() => setShowAddForm(true)} className="btn btn-primary btn-sm gap-1.5">
@@ -191,13 +264,13 @@ export default function ExpensesPage() {
                 </tr>
               </thead>
               <tbody>
-                {expenses.length === 0 ? (
+                {filteredExpenses.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="text-center py-12 text-muted-foreground text-sm">
                       No expenses found. Try adjusting filters.
                     </td>
                   </tr>
-                ) : expenses.map((expense, i) => (
+                ) : filteredExpenses.map((expense, i) => (
                   <tr key={expense.id} className="animate-fade-in group" style={{ animationDelay: `${i * 30}ms` }}>
                     <td className="text-muted-foreground text-xs whitespace-nowrap">
                       {format(new Date(expense.date), "MMM d, yyyy")}
@@ -217,10 +290,10 @@ export default function ExpensesPage() {
                     <td><span className="text-xs text-muted-foreground">{expense.notes || "—"}</span></td>
                     <td>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="btn btn-ghost btn-icon p-1.5 text-muted-foreground hover:text-foreground">
+                        <button className="btn btn-ghost btn-icon p-1.5 text-muted-foreground hover:text-foreground" onClick={() => handleEditExpense(expense)}>
                           <Pencil size={13} />
                         </button>
-                        <button className="btn btn-ghost btn-icon p-1.5 text-muted-foreground hover:text-destructive">
+                        <button className="btn btn-ghost btn-icon p-1.5 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteExpense(expense)}>
                           <Trash2 size={13} />
                         </button>
                       </div>
@@ -235,7 +308,7 @@ export default function ExpensesPage() {
         {/* Pagination */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-border">
           <p className="text-xs text-muted-foreground">
-            Showing <strong>{expenses.length}</strong> of <strong>{pagination.total}</strong> results
+            Showing <strong>{filteredExpenses.length}</strong> of <strong>{pagination.total}</strong> results
           </p>
           <div className="flex items-center gap-1">
             <button className="btn btn-ghost btn-icon p-1.5" onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -265,9 +338,9 @@ export default function ExpensesPage() {
             <div className="flex items-center justify-between px-6 py-5 border-b border-border">
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-primary">New Entry</p>
-                <h3 className="text-lg font-bold text-foreground">Add Expense</h3>
+                <h3 className="text-lg font-bold text-foreground">{editingExpense ? "Edit Expense" : "Add Expense"}</h3>
               </div>
-              <button onClick={() => setShowAddForm(false)} className="btn btn-ghost btn-icon text-muted-foreground">✕</button>
+              <button onClick={() => { setShowAddForm(false); setEditingExpense(null); }} className="btn btn-ghost btn-icon text-muted-foreground">✕</button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
@@ -278,7 +351,7 @@ export default function ExpensesPage() {
               </div>
               <div>
                 <label className="field-label">Date</label>
-                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="field-input" />
+                <input type="date" placeholder="Select date" value={date} onChange={(e) => setDate(e.target.value)} className="field-input" />
               </div>
               <div>
                 <label className="field-label">Category</label>
@@ -313,9 +386,9 @@ export default function ExpensesPage() {
             </div>
 
             <div className="px-6 py-4 border-t border-border flex gap-3">
-              <button onClick={() => setShowAddForm(false)} className="btn btn-outline flex-1">Cancel</button>
+              <button onClick={() => { setShowAddForm(false); setEditingExpense(null); }} className="btn btn-outline flex-1">Cancel</button>
               <button onClick={handleAddExpense} className="btn btn-primary flex-1 gap-2" disabled={!amount || submitting}>
-                {submitting ? <><Loader2 size={14} className="animate-spin" /> Saving…</> : "Add Expense"}
+                {submitting ? <><Loader2 size={14} className="animate-spin" /> Saving…</> : (editingExpense ? "Update Expense" : "Add Expense")}
               </button>
             </div>
           </div>

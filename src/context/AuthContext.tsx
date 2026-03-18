@@ -61,13 +61,29 @@ function resolveOnboardingRoute(user: AuthUser): { route: string } {
   return { route: "/dashboard" };
 }
 
+async function parseApiResponse(response: Response) {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    return response.json();
+  }
+
+  const text = await response.text();
+  return text ? { error: text } : {};
+}
+
 async function getServerSessionUser(): Promise<AuthUser | null> {
-  const response = await fetch("/api/auth/session", { cache: "no-store" });
+  let response: Response;
+  try {
+    response = await fetch("/api/auth/session", { cache: "no-store" });
+  } catch {
+    return null;
+  }
+
   if (!response.ok) {
     return null;
   }
 
-  const data = await response.json();
+  const data = await parseApiResponse(response);
   return (data.user as AuthUser) ?? null;
 }
 
@@ -170,13 +186,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── loginWithCredentials ──────────────────────────────────────────────────
   const loginWithCredentials = async (email: string, password: string) => {
-    const response = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    let response: Response;
+    try {
+      response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+    } catch {
+      throw new Error("Unable to reach the server. Please check your connection and try again.");
+    }
 
-    const data = await response.json();
+    const data = await parseApiResponse(response);
     if (!response.ok) throw new Error(data.error ?? "Login failed");
 
     if (auth?.currentUser) {
@@ -188,18 +209,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Deterministic routing rule
     const { route } = resolveOnboardingRoute(authUser);
-    router.push(route);
+    router.replace(route);
   };
 
   // ── signupWithCredentials ─────────────────────────────────────────────────
   const signupWithCredentials = async (name: string, email: string, password: string, role: "student" | "freelancer") => {
-    const response = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password, role }),
-    });
+    let response: Response;
+    try {
+      response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password, role }),
+      });
+    } catch {
+      throw new Error("Unable to reach the server. Please check your connection and try again.");
+    }
 
-    const data = await response.json();
+    const data = await parseApiResponse(response);
     if (!response.ok) throw new Error(data.error ?? "Signup failed");
 
     if (auth?.currentUser) {
@@ -211,7 +237,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // New users always go to onboarding (isNewUser=true, onboardingCompleted=false)
     const { route } = resolveOnboardingRoute(authUser);
-    router.push(route);
+    router.replace(route);
   };
 
   // ── signInWithGoogle ──────────────────────────────────────────────────────
@@ -221,18 +247,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const result = await signInWithPopup(auth, googleProvider);
-    const response = await fetch("/api/auth/google", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        uid: result.user.uid,
-        name: result.user.displayName,
-        email: result.user.email,
-        image: result.user.photoURL,
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uid: result.user.uid,
+          name: result.user.displayName,
+          email: result.user.email,
+          image: result.user.photoURL,
+        }),
+      });
+    } catch {
+      throw new Error("Unable to finish Google sign-in. Please try again.");
+    }
 
-    const data = await response.json();
+    const data = await parseApiResponse(response);
     if (!response.ok) throw new Error(data.error ?? "Google sign-in failed");
 
     const authUser = data.user as AuthUser;
@@ -240,7 +271,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Same deterministic routing rule — works for both new and returning Google users
     const { route } = resolveOnboardingRoute(authUser);
-    router.push(route);
+    router.replace(route);
   };
 
   // ── logout ────────────────────────────────────────────────────────────────

@@ -160,7 +160,7 @@ async function getCashflow(
 
   const [income, expenses] = await Promise.all([
     PaymentSettlement.aggregate([
-      { $match: { userId } },
+      { $match: match },
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]),
     Expense.aggregate([
