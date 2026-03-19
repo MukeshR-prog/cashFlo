@@ -18,6 +18,43 @@ export interface SendInvoiceEmailParams {
   paymentLink?: string;
   notes?: string;
   freelancerName?: string;
+  appBaseUrl?: string;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function normalizePaymentLink(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+
+  if (/^(https?:|upi:|mailto:)/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (/^[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(trimmed)) {
+    return `https://${trimmed}`;
+  }
+
+  return trimmed;
+}
+
+function buildEmailPayUrl(paymentLink: string | undefined, appBaseUrl?: string): string | undefined {
+  if (!paymentLink) return undefined;
+
+  if (/^upi:/i.test(paymentLink) && appBaseUrl) {
+    const base = appBaseUrl.replace(/\/$/, "");
+    return `${base}/api/pay?to=${encodeURIComponent(paymentLink)}`;
+  }
+
+  return paymentLink;
 }
 
 function buildHtml(params: SendInvoiceEmailParams): string {
@@ -38,6 +75,11 @@ function buildHtml(params: SendInvoiceEmailParams): string {
         </tr>`
     )
     .join("");
+
+  const normalizedLink = normalizePaymentLink(params.paymentLink);
+  const payUrl = buildEmailPayUrl(normalizedLink, params.appBaseUrl);
+  const payUrlHref = payUrl ? escapeHtml(payUrl) : "";
+  const payUrlText = payUrl ? escapeHtml(payUrl) : "";
 
   return `
 <!DOCTYPE html>
@@ -95,13 +137,13 @@ function buildHtml(params: SendInvoiceEmailParams): string {
       </div>
 
       ${
-        params.paymentLink
+        payUrl
           ? `<!-- Pay Now Button -->
       <div style="text-align:center;margin-bottom:28px;">
-        <a href="${params.paymentLink}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#ffffff;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:15px;font-weight:700;letter-spacing:0.02em;">
+        <a href="${payUrlHref}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#ffffff;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:15px;font-weight:700;letter-spacing:0.02em;">
           Pay Now
         </a>
-        <p style="margin:10px 0 0;font-size:11px;color:#9ca3af;">Or copy this link: <span style="color:#6366f1;">${params.paymentLink}</span></p>
+        <p style="margin:10px 0 0;font-size:11px;color:#9ca3af;">Or copy this link: <span style="color:#6366f1;">${payUrlText}</span></p>
       </div>`
           : ""
       }

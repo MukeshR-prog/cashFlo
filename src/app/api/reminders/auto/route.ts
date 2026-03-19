@@ -33,7 +33,15 @@ function hasCronAuth(req: NextRequest): boolean {
   return req.headers.get("x-cron-secret") === configured;
 }
 
-async function processInvoicesForUser(userId: mongoose.Types.ObjectId) {
+function getRequestBaseUrl(req: NextRequest): string {
+  const forwardedProto = req.headers.get("x-forwarded-proto");
+  const forwardedHost = req.headers.get("x-forwarded-host");
+  const host = forwardedHost ?? req.headers.get("host") ?? "localhost:3000";
+  const protocol = forwardedProto ?? (host.includes("localhost") ? "http" : "https");
+  return `${protocol}://${host}`;
+}
+
+async function processInvoicesForUser(userId: mongoose.Types.ObjectId, appBaseUrl: string) {
   const invoices = await Invoice.find({
     userId,
     status: { $in: ["sent", "due", "overdue", "partially_paid"] },
@@ -112,6 +120,7 @@ async function processInvoicesForUser(userId: mongoose.Types.ObjectId) {
         paymentLink: invoice.paymentLink,
         notes: `${heading}\n\n${note}\n\n${invoice.notes ?? ""}`.trim(),
         freelancerName,
+        appBaseUrl,
       });
 
       sent += 1;
@@ -129,6 +138,7 @@ async function processInvoicesForUser(userId: mongoose.Types.ObjectId) {
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
+    const appBaseUrl = getRequestBaseUrl(req);
 
     const cronAuthorized = hasCronAuth(req);
     if (cronAuthorized) {
@@ -139,7 +149,7 @@ export async function POST(req: NextRequest) {
       let failed = 0;
 
       for (const user of users) {
-        const r = await processInvoicesForUser(user._id as mongoose.Types.ObjectId);
+        const r = await processInvoicesForUser(user._id as mongoose.Types.ObjectId, appBaseUrl);
         scanned += r.scanned;
         sent += r.sent;
         skipped += r.skipped;
@@ -152,7 +162,7 @@ export async function POST(req: NextRequest) {
     const auth = await requireSession();
     if (auth instanceof NextResponse) return auth;
 
-    const result = await processInvoicesForUser(new mongoose.Types.ObjectId(auth.userId));
+    const result = await processInvoicesForUser(new mongoose.Types.ObjectId(auth.userId), appBaseUrl);
     return NextResponse.json({ success: true, mode: "session", ...result });
   } catch (error) {
     console.error("[REMINDERS_AUTO_POST]", error);
