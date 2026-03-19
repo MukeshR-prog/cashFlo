@@ -6,6 +6,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/Toaster";
 import { DatePickerInput } from "@/components/ui/DatePickerInput";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ClientOption {
   id: string;
@@ -26,7 +35,9 @@ export default function CreateInvoicePage() {
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
   const [terms, setTerms] = useState("Payment due within 30 days of invoice date.");
-  const [paymentLink, setPaymentLink] = useState("https://pay.cashflo.com/inv-025");
+  const [paymentLink, setPaymentLink] = useState("");
+  const [upiId, setUpiId] = useState("");
+  const [upiName, setUpiName] = useState("");
   const [methods, setMethods] = useState<string[]>(["UPI", "Bank", "PayPal"]);
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [savingDraft, setSavingDraft] = useState(false);
@@ -38,7 +49,7 @@ export default function CreateInvoicePage() {
   useEffect(() => {
     const loadClients = async () => {
       try {
-        const res = await fetch("/api/clients", { cache: "no-store" });
+        const res = await fetch("/api/clients", { cache: "no-store", credentials: "include" });
         if (!res.ok) {
           setClients([]);
           return;
@@ -72,6 +83,13 @@ export default function CreateInvoicePage() {
 
   const fmt = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
+  // Auto-generate UPI deep link whenever UPI ID, name, or total changes
+  const generatedUpiLink = upiId.trim()
+    ? `upi://pay?pa=${encodeURIComponent(upiId.trim())}&pn=${encodeURIComponent(upiName.trim() || "CashFlo")}&am=${total}&tn=${encodeURIComponent(invoiceNo)}&cu=INR`
+    : "";
+
+  const effectivePaymentLink = generatedUpiLink || paymentLink;
+
   const buildPayload = (status: "draft" | "sent") => {
     const cleanItems = items
       .filter((i) => i.description.trim() && i.qty > 0 && i.rate > 0)
@@ -93,7 +111,7 @@ export default function CreateInvoicePage() {
       issueDate: new Date().toISOString(),
       dueDate: new Date(dueDate).toISOString(),
       items: cleanItems,
-      paymentLink,
+      paymentLink: effectivePaymentLink || undefined,
       notes: [notes, terms ? `Terms: ${terms}` : "", methods.length ? `Methods: ${methods.join(", ")}` : ""]
         .filter(Boolean)
         .join("\n"),
@@ -107,6 +125,7 @@ export default function CreateInvoicePage() {
       const res = await fetch("/api/invoices", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(payload),
       });
 
@@ -170,14 +189,22 @@ export default function CreateInvoicePage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="field-label">Client</label>
-              <select
-                className="field-input"
-                value={client}
-                onChange={(e) => setClient(e.target.value)}
-              >
-                <option value="">Select client...</option>
-                {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex h-9 w-full items-center gap-2 rounded-xl border border-input bg-card px-3 text-sm text-foreground transition-colors hover:bg-muted/70">
+                  <User className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{clients.find((c) => c.id === client)?.name || "Select client..."}</span>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="min-w-56">
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>Select Client</DropdownMenuLabel>
+                    <DropdownMenuRadioGroup value={client} onValueChange={setClient}>
+                      {clients.map((c) => (
+                        <DropdownMenuRadioItem key={c.id} value={c.id}>{c.name}</DropdownMenuRadioItem>
+                      ))}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div>
               <label className="field-label">Due Date</label>
@@ -277,13 +304,45 @@ export default function CreateInvoicePage() {
         {/* Payment Methods */}
         <div className="chart-card space-y-4">
           <p className="text-sm font-bold text-foreground">Payment Methods</p>
+
+          {/* UPI Auto-Generator */}
+          <div className="space-y-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <p className="text-xs font-semibold text-primary">⚡ UPI Auto-Link Generator</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="field-label">Your UPI ID</label>
+                <input
+                  className="field-input"
+                  value={upiId}
+                  onChange={(e) => setUpiId(e.target.value)}
+                  placeholder="yourname@upi"
+                />
+              </div>
+              <div>
+                <label className="field-label">Display Name</label>
+                <input
+                  className="field-input"
+                  value={upiName}
+                  onChange={(e) => setUpiName(e.target.value)}
+                  placeholder="Freelancer Name"
+                />
+              </div>
+            </div>
+            {generatedUpiLink && (
+              <div className="mt-1">
+                <p className="text-[10px] text-muted-foreground mb-1">Generated Link (auto-fills payment link below):</p>
+                <code className="block text-[10px] text-primary bg-background border border-border rounded p-2 break-all">{generatedUpiLink}</code>
+              </div>
+            )}
+          </div>
+
           <div>
-            <label className="field-label">Payment Link</label>
+            <label className="field-label">Payment Link <span className="text-muted-foreground font-normal">(manual override)</span></label>
             <input
               className="field-input"
-              value={paymentLink}
-              onChange={(e) => setPaymentLink(e.target.value)}
-              placeholder="https://..."
+              value={effectivePaymentLink}
+              onChange={(e) => { setUpiId(""); setPaymentLink(e.target.value); }}
+              placeholder="https:// or upi://..."
             />
           </div>
           <div>
@@ -394,7 +453,7 @@ export default function CreateInvoicePage() {
             )}
 
             <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-border">
-              <p><span className="text-foreground font-semibold">Payment Link:</span> {paymentLink}</p>
+              <p><span className="text-foreground font-semibold">Payment Link:</span> {effectivePaymentLink || "—"}</p>
               <p><span className="text-foreground font-semibold">Methods:</span> {methods.join(", ") || "None selected"}</p>
             </div>
           </div>

@@ -105,7 +105,7 @@ export default function ExpensesPage() {
 
   const handleExport = async () => {
     try {
-      const res = await fetch("/api/reports/export?format=csv", { cache: "no-store" });
+      const res = await fetch("/api/reports/export?format=csv", { cache: "no-store", credentials: "include" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Export failed" }));
         toast.error("Export failed", err.error ?? "Could not generate CSV.");
@@ -184,7 +184,7 @@ export default function ExpensesPage() {
     if (!confirmed) return;
 
     try {
-      const res = await fetch(`/api/expenses/${expense.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/expenses/${expense.id}`, { method: "DELETE", credentials: "include" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Delete failed" }));
         toast.error("Failed to delete expense", err.error ?? "Unknown error");

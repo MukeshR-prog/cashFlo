@@ -4,8 +4,12 @@ import mongoose from "mongoose";
 import connectDB from "@/app/api/_lib/db/mongodb";
 import Invoice from "@/app/api/_lib/models/Invoice";
 import Client from "@/app/api/_lib/models/Client";
+import User from "@/app/api/_lib/models/User";
 import { requireSession } from "@/app/api/_lib/auth/require-session";
 import { resolveInvoiceStatusAfterPayment } from "@/app/api/_lib/finance/invoice-status";
+import { sendInvoiceEmail } from "@/app/api/_lib/email/send-invoice-email";
+
+export const dynamic = "force-dynamic";
 
 const invoiceItemSchema = z.object({
   description: z.string().min(1),
@@ -123,6 +127,35 @@ export async function POST(req: NextRequest) {
       paymentLink: parsed.data.paymentLink,
       notes: parsed.data.notes,
     });
+
+    // Auto-send email when invoice status is "sent"
+    if (created.status === "sent") {
+      try {
+        const [clientDoc, userDoc] = await Promise.all([
+          Client.findById(created.clientId).lean(),
+          User.findById(auth.userId).lean(),
+        ]);
+        const clientEmail = (clientDoc as { email?: string } | null)?.email;
+        const freelancerName = (userDoc as { name?: string } | null)?.name;
+        if (clientEmail) {
+          await sendInvoiceEmail({
+            to: clientEmail,
+            clientName: (clientDoc as { name?: string } | null)?.name ?? "Valued Client",
+            invoiceNumber: created.invoiceNumber,
+            issueDate: created.issueDate,
+            dueDate: created.dueDate,
+            items: created.items,
+            totalAmount: created.totalAmount,
+            paymentLink: created.paymentLink,
+            notes: created.notes,
+            freelancerName,
+          });
+        }
+      } catch (emailErr) {
+        console.error("[INVOICES_POST] Failed to send invoice email:", emailErr);
+        // Non-blocking — invoice was created successfully even if email fails
+      }
+    }
 
     return NextResponse.json(
       {

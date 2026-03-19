@@ -69,8 +69,12 @@ export function useDashboardData<T>({
     async (signal: AbortSignal) => {
       setState({ status: "loading" });
       try {
-        const res = await fetch(url, { cache: "no-store", signal });
+        const res = await fetch(url, { cache: "no-store", credentials: "include", signal });
         if (!res.ok) {
+          if (res.status === 401 && typeof window !== "undefined") {
+            window.location.replace("/login");
+            return;
+          }
           // Auth error / server error → fall back to mock silently
           setState({ status: "ok", data: mockRef.current, isEmpty: true });
           return;

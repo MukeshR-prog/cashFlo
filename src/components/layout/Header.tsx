@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "next-themes";
 import {
@@ -52,41 +52,59 @@ interface HeaderProps {
 
 export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [notifOpen, setNotifOpen]       = useState(false);
-  const [todayText, setTodayText]       = useState("");
-  const [notifs, setNotifs]             = useState<NotifItem[]>([]);
-  const [unreadCount, setUnreadCount]   = useState(0);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [todayText, setTodayText] = useState("");
+  const [notifs, setNotifs] = useState<NotifItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [authExpired, setAuthExpired] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const notifRef    = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
 
-  // Fetch real notifications every 30s
   const fetchNotifications = useCallback(async () => {
+    if (authExpired) return;
     try {
-      const res = await fetch("/api/notifications", { cache: "no-store" });
+      const res = await fetch("/api/notifications", { cache: "no-store", credentials: "include" });
+      if (res.status === 401) {
+        setAuthExpired(true);
+        setNotifs([]);
+        setUnreadCount(0);
+        return;
+      }
       if (!res.ok) return;
       const data = await res.json();
       setNotifs(data.notifications ?? []);
       setUnreadCount(data.unreadCount ?? 0);
-    } catch {}
-  }, []);
+    } catch {
+      // silent error handling for transient network failures
+    }
+  }, [authExpired]);
 
   useEffect(() => {
+    if (authExpired) return;
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30_000);
     return () => clearInterval(interval);
-  }, [fetchNotifications]);
+  }, [fetchNotifications, authExpired]);
+
+  useEffect(() => {
+    if (!authExpired) return;
+    router.replace("/login");
+  }, [authExpired, router]);
 
   const handleOpenNotifPanel = async () => {
     setNotifOpen(true);
     if (unreadCount > 0) {
       try {
-        await fetch("/api/notifications", { method: "PATCH" });
+        await fetch("/api/notifications", { method: "PATCH", credentials: "include" });
         setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
         setUnreadCount(0);
-      } catch {}
+      } catch {
+        // silent error handling for transient network failures
+      }
     }
   };
 
@@ -125,7 +143,6 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
       className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-border bg-background/80 px-4 backdrop-blur-xl sm:px-6"
       style={{ boxShadow: "0 1px 0 var(--border)" }}
     >
-      {/* Mobile menu toggle */}
       <button
         onClick={onMobileMenuToggle}
         className="lg:hidden btn btn-ghost btn-icon"
@@ -134,7 +151,6 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
         {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
-      {/* Page title */}
       <div className="flex-1 min-w-0">
         <h1 className="text-base font-bold text-foreground tracking-tight truncate">
           {pageTitle}
@@ -144,9 +160,10 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
         </p>
       </div>
 
-      {/* Search (desktop) */}
-      <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-muted/60 text-sm text-muted-foreground cursor-pointer hover:bg-muted transition-colors"
-           style={{ minWidth: 200 }}>
+      <div
+        className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-muted/60 text-sm text-muted-foreground cursor-pointer hover:bg-muted transition-colors"
+        style={{ minWidth: 200 }}
+      >
         <Search size={14} />
         <span>Search...</span>
         <kbd className="ml-auto text-[10px] px-1.5 py-0.5 rounded border border-border bg-background font-mono">
@@ -154,7 +171,6 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
         </kbd>
       </div>
 
-      {/* Theme toggle */}
       <button
         onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
         className="btn btn-ghost btn-icon text-muted-foreground hover:text-foreground"
@@ -163,10 +179,9 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
         {resolvedTheme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
       </button>
 
-      {/* Notifications */}
       <div className="relative" ref={notifRef}>
         <button
-          onClick={() => notifOpen ? setNotifOpen(false) : handleOpenNotifPanel()}
+          onClick={() => (notifOpen ? setNotifOpen(false) : handleOpenNotifPanel())}
           className="relative btn btn-ghost btn-icon text-muted-foreground hover:text-foreground"
           aria-label="Notifications"
         >
@@ -182,7 +197,17 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
           <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-border bg-popover shadow-lg animate-scale-in overflow-hidden">
             <div className="px-4 py-3 border-b border-border flex items-center justify-between">
               <p className="text-sm font-semibold text-foreground">Notifications</p>
-              <button onClick={() => fetch("/api/notifications", { method: "PATCH" }).then(() => { setNotifs((p) => p.map((n) => ({ ...n, read: true }))); setUnreadCount(0); })} className="text-xs text-primary hover:underline">Mark all read</button>
+              <button
+                onClick={() =>
+                  fetch("/api/notifications", { method: "PATCH", credentials: "include" }).then(() => {
+                    setNotifs((p) => p.map((n) => ({ ...n, read: true })));
+                    setUnreadCount(0);
+                  })
+                }
+                className="text-xs text-primary hover:underline"
+              >
+                Mark all read
+              </button>
             </div>
             <div className="max-h-64 overflow-y-auto p-2 space-y-1">
               {notifs.length === 0 && (
@@ -192,7 +217,10 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
                 </div>
               )}
               {notifs.map((n) => (
-                <div key={n.id} className={`flex items-start gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${n.read ? "hover:bg-muted/50" : "hover:bg-muted bg-muted/30"}`}>
+                <div
+                  key={n.id}
+                  className={`flex items-start gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${n.read ? "hover:bg-muted/50" : "hover:bg-muted bg-muted/30"}`}
+                >
                   <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${n.type === "overdue" ? "bg-destructive" : n.type === "payment" ? "bg-success" : "bg-primary"}`} />
                   <div className="flex-1 min-w-0">
                     <p className={`text-xs leading-snug ${n.read ? "text-muted-foreground" : "font-medium text-foreground"}`}>{n.message}</p>
@@ -208,7 +236,6 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
         )}
       </div>
 
-      {/* User dropdown */}
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -260,7 +287,10 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
               </Link>
               <div className="h-px bg-border my-1" />
               <button
-                onClick={() => { setDropdownOpen(false); logout(); }}
+                onClick={() => {
+                  setDropdownOpen(false);
+                  logout();
+                }}
                 className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/8 transition-colors w-full text-left"
               >
                 <LogOut size={15} />

@@ -4,6 +4,7 @@ import connectDB from "@/app/api/_lib/db/mongodb";
 import { requireSession } from "@/app/api/_lib/auth/require-session";
 import PaymentSettlement from "@/app/api/_lib/models/PaymentSettlement";
 import Expense from "@/app/api/_lib/models/Expense";
+import BankTransaction from "@/app/api/_lib/models/BankTransaction";
 import { getMonthBoundaries } from "@/app/api/_lib/finance/date-range";
 
 export async function GET(req: NextRequest) {
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
     const userId = new mongoose.Types.ObjectId(auth.userId);
     const { start, end } = getMonthBoundaries(Number.isNaN(year) ? undefined : year, Number.isNaN(month) ? undefined : month);
 
-    const [income, expenses] = await Promise.all([
+    const [income, expenses, bankIncome, bankExpense] = await Promise.all([
       PaymentSettlement.aggregate([
         { $match: { userId, paymentDate: { $gte: start, $lte: end } } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
@@ -27,10 +28,18 @@ export async function GET(req: NextRequest) {
         { $match: { userId, date: { $gte: start, $lte: end } } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
+      BankTransaction.aggregate([
+        { $match: { userId, direction: "credit", transactionDate: { $gte: start, $lte: end } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
+      BankTransaction.aggregate([
+        { $match: { userId, direction: "debit", transactionDate: { $gte: start, $lte: end } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
     ]);
 
-    const totalIncome = income[0]?.total ?? 0;
-    const totalExpenses = expenses[0]?.total ?? 0;
+    const totalIncome = (income[0]?.total ?? 0) + (bankIncome[0]?.total ?? 0);
+    const totalExpenses = (expenses[0]?.total ?? 0) + (bankExpense[0]?.total ?? 0);
 
     return NextResponse.json({
       period: { start, end },

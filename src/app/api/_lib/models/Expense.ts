@@ -10,6 +10,7 @@ export interface IExpense extends Document {
   date: Date;
   type: ExpenseType;
   paymentMode?: string;
+  isDemo?: boolean;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -25,6 +26,7 @@ const ExpenseSchema = new Schema<IExpense>(
     type: { type: String, enum: ["BUSINESS", "PERSONAL"], default: "PERSONAL", index: true },
     paymentMode: { type: String, trim: true },
     notes: { type: String, trim: true },
+    isDemo: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

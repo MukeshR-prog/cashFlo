@@ -4,7 +4,7 @@ import { requireSession } from "@/app/api/_lib/auth/require-session";
 import Invoice from "@/app/api/_lib/models/Invoice";
 import PaymentSettlement from "@/app/api/_lib/models/PaymentSettlement";
 import Expense from "@/app/api/_lib/models/Expense";
-import Client from "@/app/api/_lib/models/Client";
+import BankTransaction from "@/app/api/_lib/models/BankTransaction";
 import mongoose from "mongoose";
 
 function toCsv(rows: Array<Record<string, unknown>>): string {
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     if (auth instanceof NextResponse) return auth;
 
     const searchParams = req.nextUrl.searchParams;
-    const type   = searchParams.get("type") ?? "invoices";  // invoices | payments | expenses | full
+    const type   = searchParams.get("type") ?? "invoices";  // invoices | payments | expenses | transactions | full
     const format = searchParams.get("format") ?? "csv";
 
     if (format !== "csv") {
@@ -108,6 +108,25 @@ export async function GET(req: NextRequest) {
         filename = "expenses.csv";
       } else {
         csv += "=== EXPENSES ===\n" + toCsv(rows);
+      }
+    }
+
+    if (type === "transactions" || type === "full") {
+      const transactions = await BankTransaction.find({ userId }).sort({ transactionDate: -1 }).lean();
+      const rows = transactions.map((t) => ({
+        Date: t.transactionDate.toISOString().split("T")[0],
+        Source: t.source,
+        Direction: t.direction,
+        "Amount (INR)": t.amount,
+        Description: t.description,
+        Reference: t.reference ?? "",
+      }));
+
+      if (type === "transactions") {
+        csv = toCsv(rows);
+        filename = "transactions.csv";
+      } else {
+        csv += "\n\n=== TRANSACTIONS ===\n" + toCsv(rows);
       }
     }
 
