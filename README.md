@@ -68,7 +68,7 @@ If Firebase variables are missing, Google sign-in is disabled automatically.
 
 ```bash
 git clone <your-repo-url>
-cd Iteryx-26-hackathon
+cd cashFlo
 npm install
 ```
 

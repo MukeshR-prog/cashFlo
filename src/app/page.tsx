@@ -11,6 +11,7 @@ import {
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { Sun, Moon } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const navLinks = [
   { href: "#features", label: "Features" },
@@ -115,6 +116,7 @@ const plans = [
 const trustBrands = ["Razorpay", "Freshworks", "Zerodha", "Groww", "CRED", "Razorpay", "Freshworks", "Zerodha", "Groww", "CRED"];
 
 export default function LandingPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -173,12 +175,12 @@ export default function LandingPage() {
               </Link>
             ) : (
               <>
-                <Link href="/login" className="btn btn-ghost btn-sm text-muted-foreground">
+                <p onClick={()=> router.push("/login")} className="btn btn-ghost btn-sm text-muted-foreground">
                   Sign in
-                </Link>
-                <Link href="/signup" className="btn btn-primary btn-sm gap-1.5">
+                </p>
+                <p onClick={()=> router.push("/signup")} className="btn btn-primary btn-sm gap-1.5">
                   Get started <ArrowRight size={13} />
-                </Link>
+                </p>
               </>
             )}
           </div>
