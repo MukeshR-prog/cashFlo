@@ -175,12 +175,20 @@ export default function LandingPage() {
               </Link>
             ) : (
               <>
-                <p onClick={()=> router.push("/login")} className="btn btn-ghost btn-sm text-muted-foreground">
+                <button
+                  onClick={() => mounted && router.push("/login")}
+                  disabled={!mounted}
+                  className="btn btn-ghost btn-sm text-muted-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   Sign in
-                </p>
-                <p onClick={()=> router.push("/signup")} className="btn btn-primary btn-sm gap-1.5">
+                </button>
+                <button
+                  onClick={() => mounted && router.push("/signup")}
+                  disabled={!mounted}
+                  className="btn btn-primary btn-sm gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   Get started <ArrowRight size={13} />
-                </p>
+                </button>
               </>
             )}
           </div>
