@@ -127,7 +127,7 @@ export default function DashboardPage() {
     if (autoSeeded || loadingS) return;
     if (emptyS) {
       setAutoSeeded(true);
-      fetch("/api/seed", { method: "POST" })
+      fetch("/api/seed", { method: "POST", credentials: "include" })
         .then((res) => res.json())
         .then((data) => {
           if (data.seeded) setTimeout(() => window.location.reload(), 400);

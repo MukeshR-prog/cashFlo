@@ -4,10 +4,14 @@ import connectDB from "@/app/api/_lib/db/mongodb";
 import Client from "@/app/api/_lib/models/Client";
 import { requireSession } from "@/app/api/_lib/auth/require-session";
 
+export const dynamic = "force-dynamic";
+
 const createClientSchema = z.object({
   name: z.string().min(1),
   email: z.string().email().optional(),
   phone: z.string().optional(),
+  paymentDueDate: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 export async function GET() {
@@ -24,6 +28,8 @@ export async function GET() {
         name: client.name,
         email: client.email ?? null,
         phone: client.phone ?? null,
+        paymentDueDate: client.paymentDueDate ? client.paymentDueDate.toISOString().split("T")[0] : null,
+        notes: client.notes ?? null,
       })),
     });
   } catch (error) {
@@ -50,6 +56,8 @@ export async function POST(req: NextRequest) {
       name: parsed.data.name,
       email: parsed.data.email,
       phone: parsed.data.phone,
+      paymentDueDate: parsed.data.paymentDueDate ? new Date(parsed.data.paymentDueDate) : undefined,
+      notes: parsed.data.notes,
     });
 
     return NextResponse.json(
@@ -59,6 +67,8 @@ export async function POST(req: NextRequest) {
           name: created.name,
           email: created.email ?? null,
           phone: created.phone ?? null,
+          paymentDueDate: created.paymentDueDate ? created.paymentDueDate.toISOString().split("T")[0] : null,
+          notes: created.notes ?? null,
         },
       },
       { status: 201 }

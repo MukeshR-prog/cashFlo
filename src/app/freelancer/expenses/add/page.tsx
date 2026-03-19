@@ -27,6 +27,7 @@ export default function AddExpensePage() {
       const res = await fetch("/api/expenses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           title,
           amount: Number(amount),

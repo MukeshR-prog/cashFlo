@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -12,27 +13,50 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { Loader2 } from "lucide-react";
+import { toast } from "@/components/ui/Toaster";
 
-const monthlyCash = [
-  { month: "Oct", inflow: 58000, outflow: 26000, balance: 32000 },
-  { month: "Nov", inflow: 64000, outflow: 28500, balance: 67500 },
-  { month: "Dec", inflow: 52000, outflow: 24000, balance: 95500 },
-  { month: "Jan", inflow: 76000, outflow: 31200, balance: 140300 },
-  { month: "Feb", inflow: 69000, outflow: 29500, balance: 179800 },
-  { month: "Mar", inflow: 83000, outflow: 33800, balance: 229000 },
-];
+interface CashRow {
+  month: string;
+  inflow: number;
+  outflow: number;
+  balance: number;
+}
 
-const ledger = [
-  { date: "2026-03-12", source: "INV-042 Velachery HealthTech", type: "Inflow", amount: 32000 },
-  { date: "2026-03-13", source: "Zoho Suite + AWS Mumbai", type: "Outflow", amount: 6900 },
-  { date: "2026-03-14", source: "INV-038 settlement", type: "Inflow", amount: 36000 },
-  { date: "2026-03-15", source: "Tangedco office EB", type: "Outflow", amount: 2100 },
-  { date: "2026-03-16", source: "INV-045 partial", type: "Inflow", amount: 15000 },
-];
+interface LedgerRow {
+  date: string;
+  source: string;
+  type: "Inflow" | "Outflow";
+  amount: number;
+}
+
+interface ReportsData {
+  cashflow: CashRow[];
+  ledger: LedgerRow[];
+}
 
 const fmt = (v: number) => `₹${v.toLocaleString("en-IN")}`;
 
 export default function CashFlowPage() {
+  const [data, setData] = useState<ReportsData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch("/api/reports/data", { cache: "no-store", credentials: "include" });
+        const json = await res.json();
+        if (!res.ok) { toast.error("Could not load data", json.error ?? "Please try again."); return; }
+        setData(json);
+      } catch { toast.error("Network error", "Could not reach the server."); }
+      finally { setLoading(false); }
+    };
+    void load();
+  }, []);
+
+  const monthlyCash = data?.cashflow ?? [];
+  const ledger = data?.ledger ?? [];
+
   const totalIn = monthlyCash.reduce((sum, row) => sum + row.inflow, 0);
   const totalOut = monthlyCash.reduce((sum, row) => sum + row.outflow, 0);
   const cashInHand = totalIn - totalOut;
@@ -53,87 +77,100 @@ export default function CashFlowPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="kpi-card py-3 px-4">
-          <p className="kpi-label mb-1">Total Cash In</p>
-          <p className="kpi-value text-xl text-success">{fmt(totalIn)}</p>
+      {loading ? (
+        <div className="chart-card flex items-center justify-center py-16">
+          <Loader2 size={24} className="animate-spin text-primary" />
+          <span className="ml-2 text-sm text-muted-foreground">Loading cash flow data...</span>
         </div>
-        <div className="kpi-card py-3 px-4">
-          <p className="kpi-label mb-1">Total Cash Out</p>
-          <p className="kpi-value text-xl text-destructive">{fmt(totalOut)}</p>
-        </div>
-        <div className="kpi-card py-3 px-4">
-          <p className="kpi-label mb-1">Cash in Hand</p>
-          <p className="kpi-value text-xl text-primary">{fmt(cashInHand)}</p>
-        </div>
-        <div className="kpi-card py-3 px-4">
-          <p className="kpi-label mb-1">Real-time Position</p>
-          <p className="kpi-value text-xl">{fmt(monthlyCash[monthlyCash.length - 1].balance)}</p>
-        </div>
-      </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="kpi-card py-3 px-4">
+              <p className="kpi-label mb-1">Total Cash In</p>
+              <p className="kpi-value text-xl text-success">{fmt(totalIn)}</p>
+            </div>
+            <div className="kpi-card py-3 px-4">
+              <p className="kpi-label mb-1">Total Cash Out</p>
+              <p className="kpi-value text-xl text-destructive">{fmt(totalOut)}</p>
+            </div>
+            <div className="kpi-card py-3 px-4">
+              <p className="kpi-label mb-1">Cash in Hand</p>
+              <p className="kpi-value text-xl text-primary">{fmt(cashInHand)}</p>
+            </div>
+            <div className="kpi-card py-3 px-4">
+              <p className="kpi-label mb-1">Real-time Position</p>
+              <p className="kpi-value text-xl">{fmt(monthlyCash.length > 0 ? monthlyCash[monthlyCash.length - 1].balance : 0)}</p>
+            </div>
+          </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="chart-card">
-          <p className="chart-card-title">Cash In vs Cash Out</p>
-          <p className="chart-card-subtitle">Month-wise inflow and outflow</p>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={monthlyCash} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 0" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={52} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
-              <Tooltip formatter={(v) => [fmt(Number(v)), ""]} contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: 12 }} />
-              <Bar dataKey="inflow" fill="var(--success)" opacity={0.85} radius={[4, 4, 0, 0]} />
-              <Bar dataKey="outflow" fill="var(--destructive)" opacity={0.65} radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="chart-card">
+              <p className="chart-card-title">Cash In vs Cash Out</p>
+              <p className="chart-card-subtitle">Month-wise inflow and outflow</p>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={monthlyCash} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 0" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={52} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
+                  <Tooltip formatter={(v) => [fmt(Number(v)), ""]} contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: 12 }} />
+                  <Bar dataKey="inflow" fill="var(--success)" opacity={0.85} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="outflow" fill="var(--destructive)" opacity={0.65} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
 
-        <div className="chart-card">
-          <p className="chart-card-title">Running Cash Balance</p>
-          <p className="chart-card-subtitle">Settlement-driven inflow, expense-driven outflow</p>
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={monthlyCash} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
-              <defs>
-                <linearGradient id="cashBal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--chart-2)" stopOpacity={0.22} />
-                  <stop offset="100%" stopColor="var(--chart-2)" stopOpacity={0.03} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 0" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={52} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
-              <Tooltip formatter={(v) => [fmt(Number(v)), "Balance"]} contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: 12 }} />
-              <Area type="monotone" dataKey="balance" stroke="var(--chart-2)" strokeWidth={2.2} fill="url(#cashBal)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+            <div className="chart-card">
+              <p className="chart-card-title">Running Cash Balance</p>
+              <p className="chart-card-subtitle">Settlement-driven inflow, expense-driven outflow</p>
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={monthlyCash} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
+                  <defs>
+                    <linearGradient id="cashBal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--chart-2)" stopOpacity={0.22} />
+                      <stop offset="100%" stopColor="var(--chart-2)" stopOpacity={0.03} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 0" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={52} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
+                  <Tooltip formatter={(v) => [fmt(Number(v)), "Balance"]} contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: 12 }} />
+                  <Area type="monotone" dataKey="balance" stroke="var(--chart-2)" strokeWidth={2.2} fill="url(#cashBal)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
 
-      <div className="chart-card overflow-x-auto">
-        <p className="chart-card-title mb-3">Date-wise Inflow and Outflow Entries</p>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Source</th>
-              <th>Type</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ledger.map((row) => (
-              <tr key={`${row.date}-${row.source}`}>
-                <td className="text-xs text-muted-foreground">{row.date}</td>
-                <td className="font-medium text-foreground">{row.source}</td>
-                <td>
-                  <span className={`badge ${row.type === "Inflow" ? "badge-success" : "badge-danger"}`}>{row.type}</span>
-                </td>
-                <td className={`stat-number font-semibold ${row.type === "Inflow" ? "text-success" : "text-destructive"}`}>{fmt(row.amount)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          <div className="chart-card overflow-x-auto">
+            <p className="chart-card-title mb-3">Date-wise Inflow and Outflow Entries</p>
+            {ledger.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">No recent transactions found.</p>
+            ) : (
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Source</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ledger.map((row, i) => (
+                    <tr key={i}>
+                      <td className="text-xs text-muted-foreground">{row.date}</td>
+                      <td className="font-medium text-foreground">{row.source}</td>
+                      <td>
+                        <span className={`badge ${row.type === "Inflow" ? "badge-success" : "badge-danger"}`}>{row.type}</span>
+                      </td>
+                      <td className={`stat-number font-semibold ${row.type === "Inflow" ? "text-success" : "text-destructive"}`}>{fmt(row.amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

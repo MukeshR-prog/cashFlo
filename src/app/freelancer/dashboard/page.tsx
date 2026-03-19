@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -106,16 +106,24 @@ function DashboardTabs() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function FreelancerDashboardPage() {
+  const router = useRouter();
   const [data, setData]       = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [autoSeeded, setAutoSeeded] = useState(false);
+  const [authExpired, setAuthExpired] = useState(false);
 
   const fetchData = useCallback(async () => {
+    if (authExpired) return;
     try {
       setError(null);
-      const res = await fetch("/api/freelancer/dashboard", { cache: "no-store" });
+      const res = await fetch("/api/freelancer/dashboard", { cache: "no-store", credentials: "include" });
+      if (res.status === 401) {
+        setAuthExpired(true);
+        setError("Session expired. Please sign in again.");
+        return;
+      }
       if (!res.ok) throw new Error("Failed to load dashboard");
       const json = await res.json();
       setData(json);
@@ -125,13 +133,37 @@ export default function FreelancerDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [authExpired]);
 
   useEffect(() => {
+    if (authExpired) return;
     fetchData();
     const interval = setInterval(fetchData, 60_000); // auto-refresh every minute
     return () => clearInterval(interval);
-  }, [fetchData]);
+  }, [fetchData, authExpired]);
+
+  useEffect(() => {
+    if (!authExpired) return;
+    router.replace("/login");
+  }, [authExpired, router]);
+
+  useEffect(() => {
+    const key = "cashflo:last-reminder-auto-run";
+    const now = Date.now();
+    const last = Number(window.localStorage.getItem(key) ?? "0");
+
+    // Run at most once every 6 hours per browser to avoid noisy reminder checks.
+    if (Number.isFinite(last) && now - last < 6 * 60 * 60 * 1000) {
+      return;
+    }
+
+    fetch("/api/reminders/auto", {
+      method: "POST",
+      credentials: "include",
+    })
+      .then(() => window.localStorage.setItem(key, String(now)))
+      .catch(() => null);
+  }, []);
 
   // Auto-seed on first load when account has no data
   useEffect(() => {
@@ -143,7 +175,7 @@ export default function FreelancerDashboardPage() {
     ) {
       setAutoSeeded(true);
       setLoading(true);
-      fetch("/api/seed", { method: "POST" })
+      fetch("/api/seed", { method: "POST", credentials: "include" })
         .then(() => fetchData())
         .catch(() => setLoading(false));
     }

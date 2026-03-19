@@ -4,8 +4,11 @@ import { requireSession } from "@/app/api/_lib/auth/require-session";
 import Invoice from "@/app/api/_lib/models/Invoice";
 import PaymentSettlement from "@/app/api/_lib/models/PaymentSettlement";
 import Expense from "@/app/api/_lib/models/Expense";
+import BankTransaction from "@/app/api/_lib/models/BankTransaction";
 import Client from "@/app/api/_lib/models/Client";
 import mongoose from "mongoose";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
@@ -105,6 +108,55 @@ export async function GET(req: NextRequest) {
       if (cashflowMap[key]) cashflowMap[key].cashIn = m.cashIn;
     }
 
+    const [
+      bankTotalCredits,
+      bankThisMonthDebits,
+      bankLastMonthDebits,
+      bankAllTimeDebits,
+      bankMonthlyCredits,
+      bankMonthlyDebits,
+    ] = await Promise.all([
+      BankTransaction.aggregate([
+        { $match: { userId, direction: "credit" } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
+      BankTransaction.aggregate([
+        { $match: { userId, direction: "debit", transactionDate: { $gte: thisMonthStart } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
+      BankTransaction.aggregate([
+        { $match: { userId, direction: "debit", transactionDate: { $gte: lastMonthStart, $lte: lastMonthEnd } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
+      BankTransaction.aggregate([
+        { $match: { userId, direction: "debit" } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
+      BankTransaction.aggregate([
+        { $match: { userId, direction: "credit", transactionDate: { $gte: new Date(now.getFullYear(), now.getMonth() - 5, 1) } } },
+        {
+          $group: {
+            _id: { year: { $year: "$transactionDate" }, month: { $month: "$transactionDate" } },
+            cashIn: { $sum: "$amount" },
+          },
+        },
+      ]),
+      BankTransaction.aggregate([
+        { $match: { userId, direction: "debit", transactionDate: { $gte: new Date(now.getFullYear(), now.getMonth() - 5, 1) } } },
+        {
+          $group: {
+            _id: { year: { $year: "$transactionDate" }, month: { $month: "$transactionDate" } },
+            cashOut: { $sum: "$amount" },
+          },
+        },
+      ]),
+    ]);
+
+    for (const m of bankMonthlyCredits) {
+      const key = `${m._id.year}-${m._id.month}`;
+      if (cashflowMap[key]) cashflowMap[key].cashIn += m.cashIn;
+    }
+
     // Get last 6 months expenses
     const expenseMonthly = await Expense.aggregate([
       { $match: { userId, date: { $gte: new Date(now.getFullYear(), now.getMonth() - 5, 1) } } },
@@ -120,6 +172,11 @@ export async function GET(req: NextRequest) {
       if (cashflowMap[key]) cashflowMap[key].cashOut = m.cashOut;
     }
 
+    for (const m of bankMonthlyDebits) {
+      const key = `${m._id.year}-${m._id.month}`;
+      if (cashflowMap[key]) cashflowMap[key].cashOut += m.cashOut;
+    }
+
     const cashflowChart = Object.entries(cashflowMap).map(([key, val]) => {
       const [year, month] = key.split("-").map(Number);
       return {
@@ -131,14 +188,15 @@ export async function GET(req: NextRequest) {
     });
 
     // KPIs
-    const totalEarnedVal = totalEarned[0]?.total ?? 0;
+    const totalEarnedVal = (totalEarned[0]?.total ?? 0) + (bankTotalCredits[0]?.total ?? 0);
     const pendingVal     = pendingAmount[0]?.total ?? 0;
-    const thisMonthExp   = thisMonthExpenses[0]?.total ?? 0;
-    const lastMonthExp   = lastMonthExpenses[0]?.total ?? 0;
-    const netProfit      = totalEarnedVal - (await Expense.aggregate([
+    const thisMonthExp   = (thisMonthExpenses[0]?.total ?? 0) + (bankThisMonthDebits[0]?.total ?? 0);
+    const lastMonthExp   = (lastMonthExpenses[0]?.total ?? 0) + (bankLastMonthDebits[0]?.total ?? 0);
+    const allTimeExpense = (await Expense.aggregate([
       { $match: { userId } },
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ])).reduce((s, r) => s + r.total, 0);
+    const netProfit      = totalEarnedVal - (allTimeExpense + (bankAllTimeDebits[0]?.total ?? 0));
 
     return NextResponse.json({
       kpis: {

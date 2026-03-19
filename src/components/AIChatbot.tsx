@@ -127,7 +127,7 @@ export default function AIChatbot() {
       setError(null);
 
       try {
-        const res = await fetch("/api/chat", {
+        const res = await fetch("/api/chat", { credentials: "include",
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -177,6 +177,7 @@ export default function AIChatbot() {
       fetch("/api/chat", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ sessionId }),
       }).catch(() => {});
     }

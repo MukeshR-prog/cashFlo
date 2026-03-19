@@ -4,6 +4,8 @@ import { requireSession } from "@/app/api/_lib/auth/require-session";
 import Notification from "@/app/api/_lib/models/Notification";
 import mongoose from "mongoose";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/notifications — fetch latest 25 notifications for the user
 export async function GET(req: NextRequest) {
   try {

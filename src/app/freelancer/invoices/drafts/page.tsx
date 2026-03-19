@@ -1,15 +1,29 @@
 "use client";
 
-import { FileText, Edit3, Clock, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { FileText, Edit3, Clock, Plus, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "@/components/ui/Toaster";
 
-const drafts = [
-  { id: "INV-019", client: "Nova Systems", amount: 7800, lastEdited: "2026-03-16", created: "2026-03-14" },
-  { id: "INV-016", client: "Synapse Media", amount: 5500, lastEdited: "2026-03-12", created: "2026-03-10" },
-  { id: "INV-013", client: "BlueWave Tech", amount: 22000, lastEdited: "2026-03-08", created: "2026-03-05" },
-];
+interface DraftInvoice { id: string; client: string; amount: number; lastEdited: string; created: string; }
 
 export default function DraftsPage() {
+  const [drafts, setDrafts] = useState<DraftInvoice[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch("/api/reports/data", { cache: "no-store", credentials: "include" });
+        const json = await res.json();
+        if (!res.ok) { toast.error("Error", json.error ?? "Failed to load."); return; }
+        setDrafts(json.draftInvoices ?? []);
+      } catch { toast.error("Network error", "Could not reach the server."); }
+      finally { setLoading(false); }
+    };
+    void load();
+  }, []);
+
   return (
     <div className="space-y-5 animate-fade-up">
       <div className="flex items-center gap-1.5 flex-wrap">
@@ -28,46 +42,47 @@ export default function DraftsPage() {
       </div>
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{drafts.length} draft invoices pending completion</p>
+        <p className="text-sm text-muted-foreground">{loading ? "Loading..." : `${drafts.length} draft invoices pending completion`}</p>
         <Link href="/freelancer/invoices/create" className="btn btn-primary btn-sm gap-1.5">
           <Plus size={14} /> New Invoice
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {drafts.map((draft, i) => (
-          <div
-            key={draft.id}
-            className="card-hover animate-fade-up"
-            style={{ animationDelay: `${i * 80}ms` }}
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
-                <FileText size={18} className="text-muted-foreground" />
+      {loading ? (
+        <div className="chart-card flex items-center justify-center py-16">
+          <Loader2 size={24} className="animate-spin text-primary" />
+        </div>
+      ) : drafts.length === 0 ? (
+        <div className="chart-card text-center py-12">
+          <FileText size={32} className="text-muted-foreground/40 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">No draft invoices found.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {drafts.map((draft, i) => (
+            <div key={draft.id} className="card-hover animate-fade-up" style={{ animationDelay: `${i * 80}ms` }}>
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                  <FileText size={18} className="text-muted-foreground" />
+                </div>
+                <span className="badge badge-neutral">Draft</span>
               </div>
-              <span className="badge badge-neutral">Draft</span>
+              <p className="text-base font-bold text-foreground mb-0.5">{draft.id}</p>
+              <p className="text-sm text-muted-foreground mb-4">{draft.client}</p>
+              <div className="space-y-1.5 text-xs text-muted-foreground">
+                <p className="flex items-center gap-1.5"><Clock size={11} /> Created: {draft.created}</p>
+                <p className="flex items-center gap-1.5"><Edit3 size={11} /> Last edited: {draft.lastEdited}</p>
+              </div>
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+                <p className="text-base font-bold stat-number text-foreground">₹{draft.amount.toLocaleString("en-IN")}</p>
+                <Link href="/freelancer/invoices/create" className="btn btn-primary btn-sm gap-1">
+                  <Edit3 size={12} /> Edit
+                </Link>
+              </div>
             </div>
-            <p className="text-base font-bold text-foreground mb-0.5">{draft.id}</p>
-            <p className="text-sm text-muted-foreground mb-4">{draft.client}</p>
-            <div className="space-y-1.5 text-xs text-muted-foreground">
-              <p className="flex items-center gap-1.5">
-                <Clock size={11} /> Created: {draft.created}
-              </p>
-              <p className="flex items-center gap-1.5">
-                <Edit3 size={11} /> Last edited: {draft.lastEdited}
-              </p>
-            </div>
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
-              <p className="text-base font-bold stat-number text-foreground">
-                ₹{draft.amount.toLocaleString("en-IN")}
-              </p>
-              <Link href="/freelancer/invoices/create" className="btn btn-primary btn-sm gap-1">
-                <Edit3 size={12} /> Edit
-              </Link>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

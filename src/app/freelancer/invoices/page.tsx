@@ -1,12 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FileText, ArrowUpRight, Plus, Filter, Download } from "lucide-react";
+import { FileText, ArrowUpRight, Plus, Download, CheckCircle, Loader2, Smartphone, Building2, Banknote, Wallet, CreditCard } from "lucide-react";
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import { toast } from "@/components/ui/Toaster";
 
-const STATUS_TABS = ["All", "Draft", "Sent", "Viewed", "Due Soon", "Overdue", "Partial", "Paid"] as const;
+const STATUS_TABS = ["All", "Draft", "Sent", "Due Soon", "Overdue", "Partial", "Paid"] as const;
 type Status = typeof STATUS_TABS[number];
+
+function PaymentModeIcon({ mode }: { mode: string }) {
+  const lower = mode.toLowerCase();
+  if (lower.includes("upi")) return <Smartphone size={12} className="text-primary" />;
+  if (lower.includes("bank") || lower.includes("neft") || lower.includes("net banking")) return <Building2 size={12} className="text-chart-2" />;
+  if (lower.includes("cash")) return <Banknote size={12} className="text-success" />;
+  if (lower.includes("wallet")) return <Wallet size={12} className="text-warning-foreground" />;
+  if (lower.includes("credit") || lower.includes("debit") || lower.includes("card")) return <CreditCard size={12} className="text-muted-foreground" />;
+  return <Banknote size={12} className="text-muted-foreground" />;
+}
 
 interface InvoiceRow {
   id: string;
@@ -22,7 +33,7 @@ interface InvoiceRow {
   notes?: string;
 }
 
-const labelToApiStatus: Record<Exclude<Status, "All" | "Viewed" | "Due Soon" | "Partial">, InvoiceRow["status"]> = {
+const labelToApiStatus: Record<Exclude<Status, "All" | "Due Soon" | "Partial">, InvoiceRow["status"]> = {
   Draft: "draft",
   Sent: "sent",
   Overdue: "overdue",
@@ -36,7 +47,6 @@ const statusStyle: Record<string, string> = {
   Overdue: "badge-danger",
   Partial: "badge-accent",
   Paid: "badge-success",
-  Viewed: "badge-secondary",
 };
 
 function fmtAmount(n: number) {
@@ -49,12 +59,24 @@ export default function FreelancerInvoicesPage() {
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Payment confirmation modal state
+  const [confirmInvoice, setConfirmInvoice] = useState<InvoiceRow | null>(null);
+  const [confirmAmount, setConfirmAmount] = useState("");
+  const [confirmMode, setConfirmMode] = useState("UPI");
+  const [confirmTxnId, setConfirmTxnId] = useState("");
+  const [confirming, setConfirming] = useState(false);
+
   const fetchInvoices = async (status?: string) => {
     setLoading(true);
     try {
       const query = status ? `?status=${encodeURIComponent(status)}` : "";
-      const res = await fetch(`/api/invoices${query}`, { cache: "no-store" });
+      const res = await fetch(`/api/invoices${query}`, { cache: "no-store", credentials: "include" });
       if (!res.ok) {
+        if (res.status === 401) {
+          toast.error("Session expired", "Please sign in again.");
+          setInvoices([]);
+          return;
+        }
         const err = await res.json().catch(() => ({ error: "Failed to load invoices" }));
         toast.error("Could not load invoices", err.error ?? "Please try again.");
         setInvoices([]);
@@ -71,7 +93,7 @@ export default function FreelancerInvoicesPage() {
   };
 
   useEffect(() => {
-    const mappedStatus = labelToApiStatus[activeTab as Exclude<Status, "All" | "Viewed" | "Due Soon" | "Partial">];
+    const mappedStatus = labelToApiStatus[activeTab as Exclude<Status, "All" | "Due Soon" | "Partial">];
     void fetchInvoices(activeTab === "All" || !mappedStatus ? undefined : mappedStatus);
   }, [activeTab]);
 
@@ -79,7 +101,6 @@ export default function FreelancerInvoicesPage() {
     () =>
       invoices.filter((inv) => {
         if (activeTab === "All") return true;
-        if (activeTab === "Viewed") return inv.status === "sent";
         if (activeTab === "Due Soon") return inv.status === "due";
         if (activeTab === "Partial") return inv.status === "partially_paid";
         if (activeTab === "Draft") return inv.status === "draft";
@@ -95,8 +116,12 @@ export default function FreelancerInvoicesPage() {
 
   const handleExport = async () => {
     try {
-      const res = await fetch("/api/freelancer/export?type=invoices&format=csv", { cache: "no-store" });
+      const res = await fetch("/api/freelancer/export?type=invoices&format=csv", { cache: "no-store", credentials: "include" });
       if (!res.ok) {
+        if (res.status === 401) {
+          toast.error("Session expired", "Please sign in again.");
+          return;
+        }
         const err = await res.json().catch(() => ({ error: "Export failed" }));
         toast.error("Export failed", err.error ?? "Please try again.");
         return;
@@ -231,9 +256,24 @@ export default function FreelancerInvoicesPage() {
                   {inv.amountDue > 0 ? fmtAmount(inv.amountDue) : "—"}
                 </td>
                 <td>
-                  <button className="text-xs text-primary hover:underline flex items-center gap-0.5" onClick={() => setSelectedInvoiceId(inv.id)}>
-                    View <ArrowUpRight size={11} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button className="text-xs text-primary hover:underline flex items-center gap-0.5" onClick={() => setSelectedInvoiceId(inv.id)}>
+                      View <ArrowUpRight size={11} />
+                    </button>
+                    {inv.amountDue > 0 && inv.status !== "draft" && (
+                      <button
+                        className="text-xs text-success hover:underline flex items-center gap-0.5"
+                        onClick={() => {
+                          setConfirmInvoice(inv);
+                          setConfirmAmount(String(inv.amountDue));
+                          setConfirmMode("UPI");
+                          setConfirmTxnId("");
+                        }}
+                      >
+                        <CheckCircle size={11} /> Confirm Payment
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -266,6 +306,70 @@ export default function FreelancerInvoicesPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Payment Confirmation Modal */}
+      {confirmInvoice && typeof window !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[100] grid place-items-center p-4">
+          <div className="absolute inset-0 bg-foreground/35 backdrop-blur-sm" onClick={() => setConfirmInvoice(null)} />
+          <div className="relative w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-auto rounded-xl border border-border bg-card p-5 space-y-4 shadow-2xl animate-scale-in">
+            <div className="flex items-center justify-between">
+              <p className="text-base font-bold text-foreground">Confirm Payment</p>
+              <button onClick={() => setConfirmInvoice(null)} className="text-muted-foreground hover:text-foreground transition-colors text-xs">Close</button>
+            </div>
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p><span className="font-semibold text-foreground">Invoice:</span> {confirmInvoice.invoiceNumber}</p>
+              <p><span className="font-semibold text-foreground">Client:</span> {confirmInvoice.clientName ?? "Unknown"}</p>
+              <p><span className="font-semibold text-foreground">Outstanding:</span> {fmtAmount(confirmInvoice.amountDue)}</p>
+            </div>
+            <div>
+              <label className="field-label">Amount Received (₹)</label>
+              <input className="field-input" type="number" value={confirmAmount} onChange={(e) => setConfirmAmount(e.target.value)} placeholder="Enter amount" />
+            </div>
+            <div>
+              <label className="field-label">Payment Mode</label>
+              <div className="flex gap-2 flex-wrap">
+                {["UPI", "Net Banking", "Cash", "Wallet", "Credit Card"].map((mode) => (
+                  <button key={mode} onClick={() => setConfirmMode(mode)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${confirmMode === mode ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                    <PaymentModeIcon mode={mode} /> {mode}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="field-label">Transaction Reference / UTR <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <input className="field-input" value={confirmTxnId} onChange={(e) => setConfirmTxnId(e.target.value)} placeholder="e.g. UTR123456789" />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button className="btn btn-outline flex-1" onClick={() => setConfirmInvoice(null)}>Cancel</button>
+              <button className="btn btn-primary flex-1 gap-1.5" disabled={confirming || !confirmAmount} onClick={async () => {
+                const amount = parseFloat(confirmAmount);
+                if (!amount || amount <= 0) { toast.error("Invalid amount", "Please enter a valid amount."); return; }
+                setConfirming(true);
+                try {
+                  const res = await fetch(`/api/invoices/${confirmInvoice.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({ amount, paymentMode: confirmMode, transactionId: confirmTxnId || undefined }),
+                  });
+                  if (!res.ok) {
+                    const err = await res.json().catch(() => ({ error: "Failed" }));
+                    toast.error("Payment failed", err.error ?? "Could not confirm payment.");
+                    return;
+                  }
+                  toast.success("Payment confirmed", `₹${amount.toLocaleString("en-IN")} recorded for ${confirmInvoice.invoiceNumber}.`);
+                  setConfirmInvoice(null);
+                  void fetchInvoices();
+                } catch { toast.error("Network error", "Could not reach the server."); }
+                finally { setConfirming(false); }
+              }}>
+                {confirming ? <><Loader2 size={14} className="animate-spin" /> Processing...</> : <><CheckCircle size={14} /> Confirm Payment</>}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
     </div>

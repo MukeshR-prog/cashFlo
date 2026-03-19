@@ -5,6 +5,9 @@ export interface IClient extends Document {
   name: string;
   email?: string;
   phone?: string;
+  isDemo?: boolean;
+  paymentDueDate?: Date;
+  notes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,6 +18,9 @@ const ClientSchema = new Schema<IClient>(
     name: { type: String, required: true, trim: true },
     email: { type: String, lowercase: true, trim: true },
     phone: { type: String, trim: true },
+    paymentDueDate: { type: Date },
+    isDemo: { type: Boolean, default: false },
+    notes: { type: String, trim: true },
   },
   { timestamps: true }
 );

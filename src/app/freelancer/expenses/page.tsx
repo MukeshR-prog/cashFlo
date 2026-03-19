@@ -61,7 +61,7 @@ export default function FreelancerExpensesPage() {
 
   const handleExport = async () => {
     try {
-      const res = await fetch("/api/freelancer/export?type=expenses&format=csv", { cache: "no-store" });
+      const res = await fetch("/api/freelancer/export?type=expenses&format=csv", { cache: "no-store", credentials: "include" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Export failed" }));
         toast.error("Export failed", err.error ?? "Please try again.");

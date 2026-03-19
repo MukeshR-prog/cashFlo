@@ -1,16 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Filter } from "lucide-react";
 import Link from "next/link";
 import { DatePickerInput } from "@/components/ui/DatePickerInput";
+import { toast } from "@/components/ui/Toaster";
 
-const payments = [
-  { id: "PAY-046", invoice: "INV-042", client: "Velachery HealthTech", amount: 28000, date: "2026-03-15", mode: "UPI", txId: "UPI2046VHT", status: "Completed", remaining: 12000, payerName: "Karthik Raman", payerEmail: "accounts@velacheryhealth.in", payerPhone: "+91 97890 11452" },
-  { id: "PAY-045", invoice: "INV-042", client: "Velachery HealthTech", amount: 12000, date: "2026-03-12", mode: "Bank", txId: "NEFT004512VHT", status: "Completed", remaining: 0, payerName: "Divya Narayanan", payerEmail: "finance@velacheryhealth.in", payerPhone: "+91 98402 88231" },
-  { id: "PAY-044", invoice: "INV-038", client: "Coimbatore Agro Labs", amount: 36000, date: "2026-02-26", mode: "Bank", txId: "NEFT004438CAL", status: "Completed", remaining: 0, payerName: "Praveen Kumar", payerEmail: "billing@coagrolabs.com", payerPhone: "+91 94433 76210" },
-  { id: "PAY-043", invoice: "INV-035", client: "Madurai Retail Hub", amount: 14500, date: "2026-02-10", mode: "UPI", txId: "UPI2043MRH", status: "Completed", remaining: 0, payerName: "Sowmya Krishnan", payerEmail: "accounts@madurairetailhub.in", payerPhone: "+91 98940 23176" },
-];
+interface PaymentRow {
+  id: string;
+  invoiceNumber: string;
+  clientName: string;
+  amount: number;
+  paymentDate: string;
+  paymentMode: string;
+  transactionId: string | null;
+  payerName: string | null;
+  payerEmail: string | null;
+  payerPhone: string | null;
+  invoiceAmountDue: number | null;
+}
 
 const modeStyle: Record<string, string> = {
   UPI: "badge-primary",
@@ -19,22 +27,51 @@ const modeStyle: Record<string, string> = {
 };
 
 export default function PaymentsPage() {
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [modeFilter, setModeFilter] = useState("All");
   const [invoiceFilter, setInvoiceFilter] = useState("All");
   const [payerFilter, setPayerFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
 
-  const invoices = Array.from(new Set(payments.map((p) => p.invoice)));
+  useEffect(() => {
+    const loadPayments = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/payments", { cache: "no-store", credentials: "include" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          toast.error("Could not load payments", data.error ?? "Please try again.");
+          setPayments([]);
+          return;
+        }
+        setPayments(data.payments ?? []);
+      } catch {
+        toast.error("Network error", "Could not load payment records.");
+        setPayments([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void loadPayments();
+  }, []);
+
+  const invoices = useMemo(
+    () => Array.from(new Set(payments.map((p) => p.invoiceNumber).filter(Boolean))),
+    [payments]
+  );
 
   const filtered = payments.filter((p) => {
-    const modeMatch = modeFilter === "All" || p.mode === modeFilter;
-    const invoiceMatch = invoiceFilter === "All" || p.invoice === invoiceFilter;
+    const modeMatch = modeFilter === "All" || p.paymentMode === modeFilter;
+    const invoiceMatch = invoiceFilter === "All" || p.invoiceNumber === invoiceFilter;
     const payerMatch =
       payerFilter.trim().length === 0 ||
-      p.payerName.toLowerCase().includes(payerFilter.toLowerCase()) ||
-      p.payerEmail.toLowerCase().includes(payerFilter.toLowerCase()) ||
-      p.payerPhone.includes(payerFilter);
-    const dateMatch = !dateFilter || p.date === dateFilter;
+      (p.payerName ?? "").toLowerCase().includes(payerFilter.toLowerCase()) ||
+      (p.payerEmail ?? "").toLowerCase().includes(payerFilter.toLowerCase()) ||
+      (p.payerPhone ?? "").includes(payerFilter);
+    const isoDate = new Date(p.paymentDate).toISOString().slice(0, 10);
+    const dateMatch = !dateFilter || isoDate === dateFilter;
     return modeMatch && invoiceMatch && payerMatch && dateMatch;
   });
 
@@ -43,6 +80,9 @@ export default function PaymentsPage() {
       <div className="flex items-center gap-1.5 flex-wrap">
         {[
           { href: "/freelancer/payments", label: "Payment Records" },
+          { href: "/freelancer/payments/upload", label: "Upload Statement" },
+          { href: "/freelancer/payments/transactions", label: "Transactions" },
+          { href: "/freelancer/payments/reminders", label: "Reminders" },
           { href: "/freelancer/payments/partial", label: "Partial Payments" },
           { href: "/freelancer/payments/settlements", label: "Settlements" },
           { href: "/freelancer/payments/acknowledgements", label: "Acknowledgements" },
@@ -56,7 +96,7 @@ export default function PaymentsPage() {
       {/* Filters */}
       <div className="chart-card p-3 flex items-center gap-2 flex-wrap">
         <Filter size={14} className="text-muted-foreground" />
-        {["All", "UPI", "Bank", "PayPal"].map((m) => (
+        {["All", "UPI", "Bank", "Wallet", "PayPal", "Card", "Cash"].map((m) => (
           <button
             key={m}
             onClick={() => setModeFilter(m)}
@@ -111,21 +151,29 @@ export default function PaymentsPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((p) => (
+            {loading ? (
+              <tr>
+                <td colSpan={12} className="text-center text-sm text-muted-foreground py-8">Loading payment records...</td>
+              </tr>
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan={12} className="text-center text-sm text-muted-foreground py-8">No payment records found.</td>
+              </tr>
+            ) : filtered.map((p) => (
               <tr key={p.id}>
                 <td className="font-semibold text-muted-foreground text-xs">{p.id}</td>
-                <td className="text-primary font-semibold">{p.invoice}</td>
-                <td>{p.client}</td>
+                <td className="text-primary font-semibold">{p.invoiceNumber || "--"}</td>
+                <td>{p.clientName}</td>
                 <td className="stat-number font-bold text-success">₹{p.amount.toLocaleString("en-IN")}</td>
-                <td className="text-xs text-muted-foreground">{p.date}</td>
-                <td><span className={`badge ${modeStyle[p.mode] ?? "badge-neutral"}`}>{p.mode}</span></td>
-                <td className="text-xs text-muted-foreground font-mono">{p.txId}</td>
-                <td className="font-medium text-foreground">{p.payerName}</td>
-                <td className="text-xs text-muted-foreground">{p.payerEmail}</td>
-                <td className="text-xs text-muted-foreground">{p.payerPhone}</td>
-                <td><span className="badge badge-success">{p.status}</span></td>
+                <td className="text-xs text-muted-foreground">{new Date(p.paymentDate).toISOString().slice(0, 10)}</td>
+                <td><span className={`badge ${modeStyle[p.paymentMode] ?? "badge-neutral"}`}>{p.paymentMode}</span></td>
+                <td className="text-xs text-muted-foreground font-mono">{p.transactionId ?? "--"}</td>
+                <td className="font-medium text-foreground">{p.payerName ?? "--"}</td>
+                <td className="text-xs text-muted-foreground">{p.payerEmail ?? "--"}</td>
+                <td className="text-xs text-muted-foreground">{p.payerPhone ?? "--"}</td>
+                <td><span className="badge badge-success">Completed</span></td>
                 <td className="stat-number text-foreground">
-                  {p.remaining > 0 ? `₹${p.remaining.toLocaleString("en-IN")}` : <span className="text-success text-xs font-semibold">Settled</span>}
+                  {(p.invoiceAmountDue ?? 0) > 0 ? `₹${(p.invoiceAmountDue ?? 0).toLocaleString("en-IN")}` : <span className="text-success text-xs font-semibold">Settled</span>}
                 </td>
               </tr>
             ))}
