@@ -1,9 +1,19 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Upload, FileText, CheckCircle, AlertCircle, Loader2, TrendingUp, TrendingDown, Wallet, Plus } from "lucide-react";
+import { Upload, FileText, CheckCircle, AlertCircle, Loader2, TrendingUp, TrendingDown, Wallet, Plus, WalletIcon, ArrowDownUp } from "lucide-react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toaster";
+import { DatePickerInput } from "@/components/ui/DatePickerInput";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ParsedTransaction {
   date: string;
@@ -228,17 +238,39 @@ export default function UploadStatementPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="field-label">Source</label>
-              <select className="field-input" value={manualSource} onChange={(e) => setManualSource(e.target.value as "wallet" | "manual")}>
-                <option value="wallet">Wallet (Paytm, PhonePe, etc.)</option>
-                <option value="manual">Manual / Cash</option>
-              </select>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex h-9 w-full items-center gap-2 rounded-xl border border-input bg-card px-3 text-sm text-foreground transition-colors hover:bg-muted/70">
+                  <WalletIcon className="h-4 w-4" />
+                  {manualSource === "wallet" ? "Wallet (Paytm, PhonePe, etc.)" : "Manual / Cash"}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="min-w-56">
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>Select Source</DropdownMenuLabel>
+                    <DropdownMenuRadioGroup value={manualSource} onValueChange={(v) => setManualSource(v as "wallet" | "manual")}>
+                      <DropdownMenuRadioItem value="wallet"><WalletIcon className="mr-2 h-4 w-4" />Wallet (Paytm, PhonePe, etc.)</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="manual"><FileText className="mr-2 h-4 w-4" />Manual / Cash</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div>
               <label className="field-label">Direction</label>
-              <select className="field-input" value={manualDirection} onChange={(e) => setManualDirection(e.target.value as "credit" | "debit")}>
-                <option value="credit">Cash In (Credit)</option>
-                <option value="debit">Cash Out (Debit)</option>
-              </select>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex h-9 w-full items-center gap-2 rounded-xl border border-input bg-card px-3 text-sm text-foreground transition-colors hover:bg-muted/70">
+                  <ArrowDownUp className="h-4 w-4" />
+                  {manualDirection === "credit" ? "Cash In (Credit)" : "Cash Out (Debit)"}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="min-w-56">
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>Select Direction</DropdownMenuLabel>
+                    <DropdownMenuRadioGroup value={manualDirection} onValueChange={(v) => setManualDirection(v as "credit" | "debit")}>
+                      <DropdownMenuRadioItem value="credit"><TrendingUp className="mr-2 h-4 w-4" />Cash In (Credit)</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="debit"><TrendingDown className="mr-2 h-4 w-4" />Cash Out (Debit)</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div>
               <label className="field-label">Amount (₹)</label>
@@ -246,7 +278,7 @@ export default function UploadStatementPage() {
             </div>
             <div>
               <label className="field-label">Date</label>
-              <input className="field-input" type="date" value={manualDate} onChange={(e) => setManualDate(e.target.value)} />
+              <DatePickerInput value={manualDate} onChange={setManualDate} placeholder="Select date" />
             </div>
           </div>
           <div>

@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/fix-pdf-parse.js && next build",
     "start": "next start",
     "lint": "eslint",
+    "postinstall": "node scripts/fix-pdf-parse.js",
     "seed": "node --env-file=.env.local scripts/seed-db.mjs",
     "seed:demo": "node --env-file=.env.local scripts/seed-demo-accounts.mjs"
   },
@@ -35,7 +36,7 @@
     "next-auth": "^4.24.13",
     "next-themes": "^0.4.6",
     "nodemailer": "^7.0.13",
-    "pdf-parse": "^2.4.5",
+    "pdf-parse": "^1.1.1",
     "postcss": "^8.5.8",
     "react": "19.2.3",
     "react-dom": "19.2.3",

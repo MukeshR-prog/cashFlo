@@ -1,9 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle, Edit3, Send, DollarSign, Bell, AlertTriangle, Loader2 } from "lucide-react";
+import { CheckCircle, Edit3, Send, DollarSign, Bell, AlertTriangle, Loader2, FileText } from "lucide-react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toaster";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Invoice {
   id: string;
@@ -122,17 +131,24 @@ export default function InvoiceTimelinePage() {
         <>
           <div>
             <label className="field-label">Select Invoice</label>
-            <select
-              className="field-input max-w-xs"
-              value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
-            >
-              {invoices.map((inv) => (
-                <option key={inv.id} value={inv.id}>
-                  {inv.invoiceNumber} — {inv.clientName}
-                </option>
-              ))}
-            </select>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex h-9 w-full max-w-xs items-center gap-2 rounded-xl border border-input bg-card px-3 text-sm text-foreground transition-colors hover:bg-muted/70">
+                <FileText className="h-4 w-4 shrink-0" />
+                <span className="truncate">{invoices.find((inv) => inv.id === selectedId)?.invoiceNumber ?? "Select"} — {invoices.find((inv) => inv.id === selectedId)?.clientName ?? ""}</span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="min-w-64">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Select Invoice</DropdownMenuLabel>
+                  <DropdownMenuRadioGroup value={selectedId} onValueChange={setSelectedId}>
+                    {invoices.map((inv) => (
+                      <DropdownMenuRadioItem key={inv.id} value={inv.id}>
+                        {inv.invoiceNumber} — {inv.clientName}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <div className="chart-card">

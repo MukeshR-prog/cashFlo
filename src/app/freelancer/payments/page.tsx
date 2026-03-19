@@ -1,10 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Filter } from "lucide-react";
+import { Filter, FileText } from "lucide-react";
 import Link from "next/link";
 import { DatePickerInput } from "@/components/ui/DatePickerInput";
 import { toast } from "@/components/ui/Toaster";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface PaymentRow {
   id: string;
@@ -107,12 +116,23 @@ export default function PaymentsPage() {
             {m}
           </button>
         ))}
-        <select className="field-select h-10 w-45 text-xs" value={invoiceFilter} onChange={(e) => setInvoiceFilter(e.target.value)}>
-          <option value="All">All invoices</option>
-          {invoices.map((inv) => (
-            <option key={inv} value={inv}>{inv}</option>
-          ))}
-        </select>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex h-10 items-center gap-2 rounded-xl border border-input bg-card px-3 text-xs text-foreground transition-colors hover:bg-muted/70">
+            <FileText className="h-3.5 w-3.5" />
+            {invoiceFilter === "All" ? "All invoices" : invoiceFilter}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="min-w-48">
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Filter by Invoice</DropdownMenuLabel>
+              <DropdownMenuRadioGroup value={invoiceFilter} onValueChange={setInvoiceFilter}>
+                <DropdownMenuRadioItem value="All">All invoices</DropdownMenuRadioItem>
+                {invoices.map((inv) => (
+                  <DropdownMenuRadioItem key={inv} value={inv}>{inv}</DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <input
           className="field-input h-9 text-xs px-3"
           placeholder="Filter payer"

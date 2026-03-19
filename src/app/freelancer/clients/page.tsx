@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search, ArrowUpRight, Phone, Mail, Plus } from "lucide-react";
 import Link from "next/link";
+import { DatePickerInput } from "@/components/ui/DatePickerInput";
 import { createPortal } from "react-dom";
 import { toast } from "@/components/ui/Toaster";
 
@@ -245,7 +246,7 @@ export default function ClientsPage() {
             </div>
             <div>
               <label className="field-label">Payment Due Date <span className="text-muted-foreground font-normal">(optional)</span></label>
-              <input type="date" className="field-input" value={paymentDueDate} onChange={(e) => setPaymentDueDate(e.target.value)} />
+              <DatePickerInput value={paymentDueDate} onChange={setPaymentDueDate} placeholder="Select due date" />
             </div>
             <div>
               <label className="field-label">Notes <span className="text-muted-foreground font-normal">(optional)</span></label>

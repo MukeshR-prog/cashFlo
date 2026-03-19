@@ -6,6 +6,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/Toaster";
 import { DatePickerInput } from "@/components/ui/DatePickerInput";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ClientOption {
   id: string;
@@ -180,14 +189,22 @@ export default function CreateInvoicePage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="field-label">Client</label>
-              <select
-                className="field-input"
-                value={client}
-                onChange={(e) => setClient(e.target.value)}
-              >
-                <option value="">Select client...</option>
-                {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex h-9 w-full items-center gap-2 rounded-xl border border-input bg-card px-3 text-sm text-foreground transition-colors hover:bg-muted/70">
+                  <User className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{clients.find((c) => c.id === client)?.name || "Select client..."}</span>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="min-w-56">
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>Select Client</DropdownMenuLabel>
+                    <DropdownMenuRadioGroup value={client} onValueChange={setClient}>
+                      {clients.map((c) => (
+                        <DropdownMenuRadioItem key={c.id} value={c.id}>{c.name}</DropdownMenuRadioItem>
+                      ))}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div>
               <label className="field-label">Due Date</label>

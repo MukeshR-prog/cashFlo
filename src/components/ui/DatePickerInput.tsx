@@ -118,7 +118,7 @@ export function DatePickerInput({
   }, [month]);
 
   return (
-    <div className={cx("relative w-[13.5rem] max-w-full", className)}>
+    <div className={cx("relative w-full", className)}>
       <div
         className={cx(
           "flex h-9 w-full items-center overflow-hidden rounded-xl border border-input bg-card text-sm text-foreground shadow-sm transition-all",

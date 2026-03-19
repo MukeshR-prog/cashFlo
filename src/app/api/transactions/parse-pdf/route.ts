@@ -7,18 +7,6 @@ import BankTransaction from "@/app/api/_lib/models/BankTransaction";
 
 export const dynamic = "force-dynamic";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let pdfParse: ((buffer: Buffer, options?: unknown) => Promise<{ text: string }>) | undefined;
-
-async function getPdfParse() {
-  if (pdfParse) return pdfParse;
-
-  const mod = await import("pdf-parse");
-  const candidate = (mod as unknown as { default?: unknown }).default ?? mod;
-  pdfParse = candidate as (buffer: Buffer, options?: unknown) => Promise<{ text: string }>;
-  return pdfParse;
-}
-
 interface ParsedTransaction {
   date: string;
   description: string;
@@ -122,12 +110,28 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const parse = await getPdfParse();
-    const { text } = await parse(buffer);
+    // ── pdf-parse import ──────────────────────────────────────────
+    // IMPORTANT: We import from 'pdf-parse/lib/pdf-parse.js' directly
+    // because the main index.js has a bug: it checks `!module.parent` and
+    // tries to readFileSync a test PDF that doesn't exist in node_modules.
+    // Importing the inner module skips that code entirely.
+    let text = "";
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const pdfParse = require("pdf-parse/lib/pdf-parse.js");
+      const result = await pdfParse(buffer);
+      text = result?.text ?? "";
+    } catch (parseError) {
+      console.error("[PARSE_PDF] pdf-parse failed:", parseError);
+      return NextResponse.json(
+        { error: "PDF parsing failed. Make sure the file is a text-based PDF (not scanned/image). Try uploading a CSV instead." },
+        { status: 422 }
+      );
+    }
 
     if (!text || text.trim().length < 50) {
       return NextResponse.json(
-        { error: "Could not extract text from PDF. The file might be scanned or image-based." },
+        { error: "Could not extract text from PDF. The file might be scanned or image-based. Try a CSV export instead." },
         { status: 422 }
       );
     }
@@ -192,6 +196,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("[PARSE_PDF]", error);
-    return NextResponse.json({ error: "Failed to parse PDF" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to parse PDF. Try uploading a CSV bank statement instead." }, { status: 500 });
   }
 }
