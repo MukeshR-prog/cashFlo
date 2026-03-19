@@ -6,6 +6,9 @@ import { requireSession } from "@/app/api/_lib/auth/require-session";
 import Invoice from "@/app/api/_lib/models/Invoice";
 import PaymentSettlement from "@/app/api/_lib/models/PaymentSettlement";
 import { resolveInvoiceStatusAfterPayment } from "@/app/api/_lib/finance/invoice-status";
+import Client from "@/app/api/_lib/models/Client";
+
+export const dynamic = "force-dynamic";
 
 const isValidDate = (value: string) => !Number.isNaN(new Date(value).getTime());
 
@@ -19,6 +22,58 @@ const createPaymentSchema = z.object({
   payerEmail: z.string().email().optional(),
   payerPhone: z.string().optional(),
 });
+
+export async function GET() {
+  try {
+    const auth = await requireSession();
+    if (auth instanceof NextResponse) return auth;
+
+    await connectDB();
+
+    const settlements = await PaymentSettlement.find({ userId: auth.userId })
+      .sort({ paymentDate: -1, createdAt: -1 })
+      .lean();
+
+    const invoiceIds = settlements.map((s) => s.invoiceId).filter(Boolean);
+    const invoices = await Invoice.find({ _id: { $in: invoiceIds }, userId: auth.userId })
+      .select("_id invoiceNumber clientId totalAmount amountDue amountPaid status")
+      .lean();
+    const clientIds = invoices.map((i) => i.clientId).filter(Boolean);
+    const clients = await Client.find({ _id: { $in: clientIds }, userId: auth.userId })
+      .select("_id name")
+      .lean();
+
+    const invoiceById = new Map(invoices.map((i) => [i._id.toString(), i]));
+    const clientById = new Map(clients.map((c) => [c._id.toString(), c]));
+
+    return NextResponse.json({
+      payments: settlements.map((s) => {
+        const invoice = invoiceById.get(s.invoiceId.toString());
+        const client = invoice?.clientId ? clientById.get(invoice.clientId.toString()) : undefined;
+        return {
+          id: s._id.toString(),
+          invoiceId: s.invoiceId.toString(),
+          invoiceNumber: invoice?.invoiceNumber ?? "",
+          clientName: client?.name ?? "Unknown",
+          amount: s.amount,
+          paymentDate: s.paymentDate,
+          paymentMode: s.paymentMode,
+          transactionId: s.transactionId ?? null,
+          payerName: s.payerName ?? null,
+          payerEmail: s.payerEmail ?? null,
+          payerPhone: s.payerPhone ?? null,
+          invoiceTotalAmount: invoice?.totalAmount ?? null,
+          invoiceAmountDue: invoice?.amountDue ?? null,
+          invoiceAmountPaid: invoice?.amountPaid ?? null,
+          invoiceStatus: invoice?.status ?? null,
+        };
+      }),
+    });
+  } catch (error) {
+    console.error("[PAYMENTS_GET]", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {

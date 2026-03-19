@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "next-themes";
 import {
@@ -40,6 +40,12 @@ const routeTitles: Record<string, { title: string; subtitle: string }> = {
   "/freelancer/settings": { title: "Settings", subtitle: "Account preferences and configuration" },
 };
 
+const dataCaptureQuickLinks = [
+  { href: "/freelancer/payments/upload", label: "Upload" },
+  { href: "/freelancer/payments/transactions", label: "Transactions" },
+  { href: "/freelancer/payments/reminders", label: "Reminders" },
+];
+
 interface NotifItem {
   id: string;
   message: string;
@@ -74,6 +80,7 @@ interface HeaderProps {
 
 export function FreelancerHeader({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -81,6 +88,7 @@ export function FreelancerHeader({ onMobileMenuToggle, mobileMenuOpen }: HeaderP
   const [searchFocused, setSearchFocused] = useState(false);
   const [notifs, setNotifs]             = useState<NotifItem[]>([]);
   const [unreadCount, setUnreadCount]   = useState(0);
+  const [authExpired, setAuthExpired]   = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notifRef    = useRef<HTMLDivElement>(null);
 
@@ -94,8 +102,15 @@ export function FreelancerHeader({ onMobileMenuToggle, mobileMenuOpen }: HeaderP
 
   // ── Fetch notifications ──────────────────────────────────────────────────────
   const fetchNotifications = useCallback(async () => {
+    if (authExpired) return;
     try {
-      const res = await fetch("/api/notifications", { cache: "no-store" });
+      const res = await fetch("/api/notifications", { cache: "no-store", credentials: "include" });
+      if (res.status === 401) {
+        setAuthExpired(true);
+        setNotifs([]);
+        setUnreadCount(0);
+        return;
+      }
       if (!res.ok) return;
       const data = await res.json();
       setNotifs(data.notifications ?? []);
@@ -103,20 +118,26 @@ export function FreelancerHeader({ onMobileMenuToggle, mobileMenuOpen }: HeaderP
     } catch {
       // silently fail
     }
-  }, []);
+  }, [authExpired]);
 
   useEffect(() => {
+    if (authExpired) return;
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30_000); // poll every 30s
     return () => clearInterval(interval);
-  }, [fetchNotifications]);
+  }, [fetchNotifications, authExpired]);
+
+  useEffect(() => {
+    if (!authExpired) return;
+    router.replace("/login");
+  }, [authExpired, router]);
 
   // ── Mark all as read when panel opens ────────────────────────────────────────
   const handleOpenNotifPanel = async () => {
     setNotifOpen(true);
     if (unreadCount > 0) {
       try {
-        await fetch("/api/notifications", { method: "PATCH" });
+        await fetch("/api/notifications", { method: "PATCH", credentials: "include" });
         setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
         setUnreadCount(0);
       } catch {
@@ -166,6 +187,27 @@ export function FreelancerHeader({ onMobileMenuToggle, mobileMenuOpen }: HeaderP
         <p className="text-[11px] text-muted-foreground hidden sm:block truncate leading-tight">
           {pageInfo.subtitle}
         </p>
+      </div>
+
+      {/* High-visibility data capture shortcuts */}
+      <div className="hidden lg:flex items-center gap-1.5">
+        {dataCaptureQuickLinks.map((item) => {
+          const active = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors ${
+                active
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+              }`}
+              title={item.label}
+            >
+              {item.label}
+            </Link>
+          );
+        })}
       </div>
 
       {/* Search bar */}
@@ -238,7 +280,7 @@ export function FreelancerHeader({ onMobileMenuToggle, mobileMenuOpen }: HeaderP
             </div>
             <div className="px-4 py-3 border-t border-border bg-muted/30">
               <button
-                onClick={() => fetch("/api/notifications", { method: "PATCH" }).then(() => { setNotifs((p) => p.map((n) => ({ ...n, read: true }))); setUnreadCount(0); })}
+                onClick={() => fetch("/api/notifications", { method: "PATCH", credentials: "include" }).then(() => { setNotifs((p) => p.map((n) => ({ ...n, read: true }))); setUnreadCount(0); })}
                 className="text-xs text-primary hover:underline w-full text-center font-medium"
               >
                 Mark all as read

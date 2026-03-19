@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search, ArrowUpRight, Phone, Mail, Plus } from "lucide-react";
 import Link from "next/link";
+import { DatePickerInput } from "@/components/ui/DatePickerInput";
+import { createPortal } from "react-dom";
 import { toast } from "@/components/ui/Toaster";
 
 interface Client {
@@ -10,6 +12,8 @@ interface Client {
   name: string;
   email: string | null;
   phone: string | null;
+  paymentDueDate: string | null;
+  notes: string | null;
 }
 
 export default function ClientsPage() {
@@ -20,12 +24,31 @@ export default function ClientsPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [paymentDueDate, setPaymentDueDate] = useState("");
+  const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!showAdd) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowAdd(false);
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [showAdd]);
 
   const loadClients = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/clients", { cache: "no-store" });
+      const res = await fetch("/api/clients", { cache: "no-store", credentials: "include" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Failed to load clients" }));
         toast.error("Could not load clients", err.error ?? "Please try again.");
@@ -57,10 +80,13 @@ export default function ClientsPage() {
       const res = await fetch("/api/clients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           name: name.trim(),
           email: email.trim() || undefined,
           phone: phone.trim() || undefined,
+          paymentDueDate: paymentDueDate.trim() || undefined,
+          notes: notes.trim() || undefined,
         }),
       });
 
@@ -75,6 +101,8 @@ export default function ClientsPage() {
       setName("");
       setEmail("");
       setPhone("");
+      setPaymentDueDate("");
+      setNotes("");
       await loadClients();
     } catch {
       toast.error("Network error", "Could not reach the server.");
@@ -161,9 +189,14 @@ export default function ClientsPage() {
             <p className="text-xs text-muted-foreground flex items-center gap-1 mb-0.5">
               <Mail size={10} /> {client.email ?? "No email"}
             </p>
-            <p className="text-xs text-muted-foreground flex items-center gap-1 mb-4">
+            <p className="text-xs text-muted-foreground flex items-center gap-1 mb-0.5">
               <Phone size={10} /> {client.phone ?? "No phone"}
             </p>
+            {client.paymentDueDate && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1 mb-0.5">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-warning-foreground">Due:</span> {client.paymentDueDate}
+              </p>
+            )}
 
             <div className="grid grid-cols-3 gap-2 text-center border-t border-border pt-3">
               <div>
@@ -194,10 +227,10 @@ export default function ClientsPage() {
       </div>
       )}
 
-      {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-foreground/20" onClick={() => setShowAdd(false)} />
-          <div className="relative w-full max-w-md rounded-xl border border-border bg-card p-5 space-y-3">
+      {showAdd && typeof window !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[100] grid place-items-center p-4">
+          <div className="absolute inset-0 bg-foreground/35 backdrop-blur-sm" onClick={() => setShowAdd(false)} />
+          <div className="relative w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-auto rounded-xl border border-border bg-card p-5 space-y-3 shadow-2xl">
             <p className="text-base font-bold text-foreground">Add Client</p>
             <div>
               <label className="field-label">Name</label>
@@ -211,6 +244,14 @@ export default function ClientsPage() {
               <label className="field-label">Phone</label>
               <input className="field-input" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 ..." />
             </div>
+            <div>
+              <label className="field-label">Payment Due Date <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <DatePickerInput value={paymentDueDate} onChange={setPaymentDueDate} placeholder="Select due date" />
+            </div>
+            <div>
+              <label className="field-label">Notes <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <textarea className="field-input h-16 resize-none" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Any important info about this client..." />
+            </div>
             <div className="flex gap-2 pt-2">
               <button className="btn btn-outline flex-1" onClick={() => setShowAdd(false)}>Cancel</button>
               <button className="btn btn-primary flex-1" onClick={handleAddClient} disabled={saving}>
@@ -218,7 +259,8 @@ export default function ClientsPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -1,11 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Save } from "lucide-react";
+import { Save, Tag } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/Toaster";
 import { DatePickerInput } from "@/components/ui/DatePickerInput";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const categories = ["Software", "Travel", "Internet", "Hardware", "Marketing", "Food", "Health", "Communication", "Misc"];
 const types = ["BUSINESS", "PERSONAL"];
@@ -27,6 +36,7 @@ export default function AddExpensePage() {
       const res = await fetch("/api/expenses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           title,
           amount: Number(amount),
@@ -116,9 +126,22 @@ export default function AddExpensePage() {
 
         <div>
           <label className="field-label">Category</label>
-          <select className="field-input" value={category} onChange={(e) => setCategory(e.target.value)}>
-            {categories.map((c) => <option key={c}>{c}</option>)}
-          </select>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex h-9 w-full items-center gap-2 rounded-xl border border-input bg-card px-3 text-sm text-foreground transition-colors hover:bg-muted/70">
+              <Tag className="h-4 w-4" />
+              {category}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="min-w-48">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Select Category</DropdownMenuLabel>
+                <DropdownMenuRadioGroup value={category} onValueChange={setCategory}>
+                  {categories.map((c) => (
+                    <DropdownMenuRadioItem key={c} value={c}>{c}</DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div>

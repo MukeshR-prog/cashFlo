@@ -125,6 +125,7 @@ export default function OnboardingPage() {
         res = await fetch("/api/onboarding", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({ role, profile }),
         });
       } catch {

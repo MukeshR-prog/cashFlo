@@ -4,6 +4,7 @@ import connectDB from "@/app/api/_lib/db/mongodb";
 import { requireSession } from "@/app/api/_lib/auth/require-session";
 import PaymentSettlement from "@/app/api/_lib/models/PaymentSettlement";
 import Expense from "@/app/api/_lib/models/Expense";
+import BankTransaction from "@/app/api/_lib/models/BankTransaction";
 import { getMonthBoundaries } from "@/app/api/_lib/finance/date-range";
 
 export async function GET(req: NextRequest) {
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
     const userId = new mongoose.Types.ObjectId(auth.userId);
     const { start, end } = getMonthBoundaries(year, month);
 
-    const [allIn, allOut, monthIn, monthOut, recentDeductions] = await Promise.all([
+    const [allIn, allOut, monthIn, monthOut, bankAllIn, bankAllOut, bankMonthIn, bankMonthOut, recentDeductions] = await Promise.all([
       PaymentSettlement.aggregate([{ $match: { userId } }, { $group: { _id: null, total: { $sum: "$amount" } } }]),
       Expense.aggregate([{ $match: { userId } }, { $group: { _id: null, total: { $sum: "$amount" } } }]),
       PaymentSettlement.aggregate([
@@ -31,18 +32,34 @@ export async function GET(req: NextRequest) {
         { $match: { userId, date: { $gte: start, $lte: end } } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
+      BankTransaction.aggregate([
+        { $match: { userId, direction: "credit" } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
+      BankTransaction.aggregate([
+        { $match: { userId, direction: "debit" } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
+      BankTransaction.aggregate([
+        { $match: { userId, direction: "credit", transactionDate: { $gte: start, $lte: end } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
+      BankTransaction.aggregate([
+        { $match: { userId, direction: "debit", transactionDate: { $gte: start, $lte: end } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
       Expense.find({ userId: auth.userId }).sort({ date: -1 }).limit(10).lean(),
     ]);
 
-    const inflow = allIn[0]?.total ?? 0;
-    const outflow = allOut[0]?.total ?? 0;
+    const inflow = (allIn[0]?.total ?? 0) + (bankAllIn[0]?.total ?? 0);
+    const outflow = (allOut[0]?.total ?? 0) + (bankAllOut[0]?.total ?? 0);
 
     return NextResponse.json({
       currentBalance: inflow - outflow,
       inflow,
       outflow,
-      monthlyInflow: monthIn[0]?.total ?? 0,
-      monthlyOutflow: monthOut[0]?.total ?? 0,
+      monthlyInflow: (monthIn[0]?.total ?? 0) + (bankMonthIn[0]?.total ?? 0),
+      monthlyOutflow: (monthOut[0]?.total ?? 0) + (bankMonthOut[0]?.total ?? 0),
       recentDeductions: recentDeductions.map((row) => ({
         id: row._id.toString(),
         title: row.title,

@@ -8,6 +8,7 @@ export interface IPaymentSettlement extends Document {
   paymentMode: string;
   transactionId?: string;
   payerName?: string;
+  isDemo?: boolean;
   payerEmail?: string;
   payerPhone?: string;
   createdAt: Date;
@@ -25,6 +26,7 @@ const PaymentSettlementSchema = new Schema<IPaymentSettlement>(
     payerName: { type: String, trim: true },
     payerEmail: { type: String, trim: true, lowercase: true },
     payerPhone: { type: String, trim: true },
+    isDemo: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

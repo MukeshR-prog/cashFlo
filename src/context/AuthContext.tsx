@@ -74,7 +74,7 @@ async function parseApiResponse(response: Response) {
 async function getServerSessionUser(): Promise<AuthUser | null> {
   let response: Response;
   try {
-    response = await fetch("/api/auth/session", { cache: "no-store" });
+    response = await fetch("/api/auth/session", { cache: "no-store", credentials: "include" });
   } catch {
     return null;
   }
@@ -115,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await fetch("/api/auth/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           uid: firebaseUser.uid,
           name: firebaseUser.displayName,
@@ -191,6 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
     } catch {
@@ -219,6 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ name, email, password, role }),
       });
     } catch {
@@ -252,6 +255,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       response = await fetch("/api/auth/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           uid: result.user.uid,
           name: result.user.displayName,
@@ -277,7 +281,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── logout ────────────────────────────────────────────────────────────────
   const logout = async () => {
     if (auth?.currentUser) await signOut(auth);
-    await fetch("/api/auth/session", { method: "DELETE" });
+    await fetch("/api/auth/session", { method: "DELETE", credentials: "include" });
     setUser(null);
     router.push("/login");
   };

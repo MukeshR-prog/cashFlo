@@ -28,6 +28,7 @@ export interface IInvoice extends Document {
   status: InvoiceStatus;
   paymentLink?: string;
   notes?: string;
+  isDemo?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -61,6 +62,7 @@ const InvoiceSchema = new Schema<IInvoice>(
     },
     paymentLink: { type: String, trim: true },
     notes: { type: String, trim: true },
+    isDemo: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

@@ -9,6 +9,8 @@ const updateClientSchema = z.object({
   name: z.string().min(1).optional(),
   email: z.string().email().optional(),
   phone: z.string().optional(),
+  paymentDueDate: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -30,9 +32,14 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 
     await connectDB();
 
+    const updatePayload: Record<string, unknown> = { ...parsed.data };
+    if ("paymentDueDate" in parsed.data) {
+      updatePayload.paymentDueDate = parsed.data.paymentDueDate ? new Date(parsed.data.paymentDueDate) : null;
+    }
+
     const updated = await Client.findOneAndUpdate(
       { _id: id, userId: auth.userId },
-      { $set: parsed.data },
+      { $set: updatePayload },
       { new: true }
     ).lean();
 
@@ -46,6 +53,8 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         name: updated.name,
         email: updated.email ?? null,
         phone: updated.phone ?? null,
+        paymentDueDate: updated.paymentDueDate ? updated.paymentDueDate.toISOString().split("T")[0] : null,
+        notes: updated.notes ?? null,
       },
     });
   } catch (error) {

@@ -3,6 +3,7 @@ import { z } from "zod";
 import mongoose from "mongoose";
 import connectDB from "@/app/api/_lib/db/mongodb";
 import Invoice from "@/app/api/_lib/models/Invoice";
+import PaymentSettlement from "@/app/api/_lib/models/PaymentSettlement";
 import { requireSession } from "@/app/api/_lib/auth/require-session";
 import { resolveInvoiceStatusAfterPayment } from "@/app/api/_lib/finance/invoice-status";
 
@@ -151,6 +152,74 @@ export async function DELETE(_req: NextRequest, context: { params: Promise<{ id:
     return NextResponse.json({ message: "Invoice deleted" });
   } catch (error) {
     console.error("[INVOICE_DELETE]", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+// ── PATCH: Confirm payment (UPI / manual) ──────────────────────────────────
+
+const confirmPaymentSchema = z.object({
+  amount: z.number().positive(),
+  paymentMode: z.string().min(1),
+  transactionId: z.string().optional(),
+  paymentDate: z.string().optional(),
+});
+
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  try {
+    const auth = await requireSession();
+    if (auth instanceof NextResponse) return auth;
+
+    const { id } = await context.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ error: "Invalid invoice id" }, { status: 400 });
+    }
+
+    const body = await req.json();
+    const parsed = confirmPaymentSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid payload" }, { status: 400 });
+    }
+
+    await connectDB();
+
+    const invoice = await Invoice.findOne({ _id: id, userId: auth.userId });
+    if (!invoice) {
+      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+    }
+
+    // Create PaymentSettlement
+    const settlement = await PaymentSettlement.create({
+      invoiceId: invoice._id,
+      userId: auth.userId,
+      amount: parsed.data.amount,
+      paymentDate: parsed.data.paymentDate ? new Date(parsed.data.paymentDate) : new Date(),
+      paymentMode: parsed.data.paymentMode,
+      transactionId: parsed.data.transactionId,
+    });
+
+    // Update invoice
+    invoice.amountPaid = (invoice.amountPaid ?? 0) + parsed.data.amount;
+    invoice.amountDue = Math.max(0, invoice.totalAmount - invoice.amountPaid);
+    invoice.status = resolveInvoiceStatusAfterPayment(invoice.totalAmount, invoice.amountPaid, invoice.dueDate);
+    await invoice.save();
+
+    return NextResponse.json({
+      payment: {
+        id: settlement._id.toString(),
+        amount: settlement.amount,
+        paymentMode: settlement.paymentMode,
+        transactionId: settlement.transactionId ?? null,
+      },
+      invoice: {
+        id: invoice._id.toString(),
+        amountPaid: invoice.amountPaid,
+        amountDue: invoice.amountDue,
+        status: invoice.status,
+      },
+    });
+  } catch (error) {
+    console.error("[INVOICE_PATCH]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

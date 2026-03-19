@@ -118,7 +118,7 @@ export function DatePickerInput({
   }, [month]);
 
   return (
-    <div className={cx("relative w-[13.5rem] max-w-full", className)}>
+    <div className={cx("relative w-full", className)}>
       <div
         className={cx(
           "flex h-9 w-full items-center overflow-hidden rounded-xl border border-input bg-card text-sm text-foreground shadow-sm transition-all",
@@ -187,7 +187,7 @@ export function DatePickerInput({
               align="end"
               alignOffset={-8}
               sideOffset={8}
-              className="z-50 w-[15.5rem] overflow-hidden rounded-xl border border-border bg-popover p-2 text-popover-foreground shadow-xl outline-none"
+              className="z-250 w-62 overflow-hidden rounded-xl border border-border bg-popover p-2 text-popover-foreground shadow-xl outline-none"
             >
               <div className="mb-2 flex items-center justify-between">
                 <button
