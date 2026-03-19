@@ -155,25 +155,22 @@ export default function FreelancerInvoicesPage() {
   const fmtDate = (iso: string) => new Date(iso).toISOString().split("T")[0];
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-1.5 flex-wrap animate-fade-up">
-        {[
-          { href: "/freelancer/invoices", label: "All Invoices" },
-          { href: "/freelancer/invoices/create", label: "Create" },
-          { href: "/freelancer/invoices/drafts", label: "Drafts" },
-          { href: "/freelancer/invoices/sent", label: "Sent & Due" },
-          { href: "/freelancer/invoices/timeline", label: "Timeline" },
-          { href: "/freelancer/invoices/reports", label: "Reports" },
-        ].map((tab) => (
-          <Link key={tab.href} href={tab.href} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${tab.href === "/freelancer/invoices" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
-            {tab.label}
-          </Link>
-        ))}
-      </div>
-
-      {/* Header Actions */}
-      <div className="flex items-center justify-between animate-fade-up">
-        <div />
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between animate-fade-up">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {[
+            { href: "/freelancer/invoices", label: "All Invoices" },
+            { href: "/freelancer/invoices/create", label: "Create" },
+            { href: "/freelancer/invoices/drafts", label: "Drafts" },
+            { href: "/freelancer/invoices/sent", label: "Sent & Due" },
+            { href: "/freelancer/invoices/timeline", label: "Timeline" },
+            { href: "/freelancer/invoices/reports", label: "Reports" },
+          ].map((tab) => (
+            <Link key={tab.href} href={tab.href} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${tab.href === "/freelancer/invoices" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+              {tab.label}
+            </Link>
+          ))}
+        </div>
         <div className="flex items-center gap-2">
           <button className="btn btn-outline btn-sm gap-1.5" onClick={handleExport}>
             <Download size={14} /> Export
@@ -187,25 +184,28 @@ export default function FreelancerInvoicesPage() {
       {/* Summary Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-fade-up delay-75">
         {[
-          { label: "Total Invoices", value: summary.total, color: "text-foreground" },
-          { label: "Unpaid", value: summary.unpaid, color: "text-warning-foreground" },
-          { label: "Overdue", value: summary.overdue, color: "text-destructive" },
-          { label: "Paid", value: summary.paid, color: "text-success" },
+          { label: "TOTAL INVOICES", value: summary.total, color: "text-foreground", bg: "var(--primary)" },
+          { label: "UNPAID", value: summary.unpaid, color: "text-warning-foreground", bg: "var(--warning)" },
+          { label: "OVERDUE", value: summary.overdue, color: "text-destructive", bg: "var(--destructive)" },
+          { label: "PAID", value: summary.paid, color: "text-success", bg: "var(--success)" },
         ].map((s) => (
-          <div key={s.label} className="kpi-card py-3 px-4">
-            <p className="kpi-label mb-1">{s.label}</p>
+          <div key={s.label} className="kpi-card py-4 px-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2 h-2 rounded-full shrink-0" style={{ background: s.bg }} />
+              <p className="kpi-label">{s.label}</p>
+            </div>
             <p className={`text-2xl font-bold stat-number ${s.color}`}>{s.value}</p>
           </div>
         ))}
       </div>
 
       {/* Status Filter Tabs */}
-      <div className="flex items-center gap-1 flex-wrap animate-fade-up delay-100">
+      <div className="flex items-center gap-1.5 flex-wrap animate-fade-up delay-100">
         {STATUS_TABS.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 ${
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-150 whitespace-nowrap ${
               activeTab === tab
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
@@ -223,46 +223,38 @@ export default function FreelancerInvoicesPage() {
             <tr>
               <th>Invoice</th>
               <th>Client</th>
-              <th>Amount</th>
+              <th className="text-right">Amount</th>
               <th>Due Date</th>
               <th>Status</th>
-              <th>Sent Date</th>
-              <th>Payment Date</th>
-              <th>Created</th>
-              <th>Updated</th>
-              <th>Paid</th>
-              <th>Remaining</th>
+              <th className="text-right">Paid</th>
+              <th className="text-right">Remaining</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={12} className="text-center py-8 text-sm text-muted-foreground">Loading invoices...</td></tr>
+              <tr><td colSpan={8} className="text-center py-8 text-sm text-muted-foreground">Loading invoices...</td></tr>
             ) : filtered.map((inv) => (
               <tr key={inv.id} className={selected?.id === inv.id ? "bg-primary/5" : ""}>
-                <td className="font-semibold text-primary">{inv.invoiceNumber}</td>
+                <td className="font-semibold text-primary whitespace-nowrap">{inv.invoiceNumber}</td>
                 <td className="font-medium text-foreground">{inv.clientName ?? "Unknown"}</td>
-                <td className="stat-number font-semibold">{fmtAmount(inv.totalAmount)}</td>
-                <td className="text-muted-foreground text-xs">{fmtDate(inv.dueDate)}</td>
+                <td className="stat-number font-semibold text-right whitespace-nowrap">{fmtAmount(inv.totalAmount)}</td>
+                <td className="text-muted-foreground text-xs whitespace-nowrap">{fmtDate(inv.dueDate)}</td>
                 <td>
                   <span className={`badge ${statusStyle[toDisplayStatus(inv.status)]}`}>{toDisplayStatus(inv.status)}</span>
                 </td>
-                <td className="text-xs text-muted-foreground">{fmtDate(inv.issueDate)}</td>
-                <td className="text-xs text-muted-foreground">{inv.amountPaid > 0 ? "Received" : "—"}</td>
-                <td className="text-xs text-muted-foreground">{fmtDate(inv.issueDate)}</td>
-                <td className="text-xs text-muted-foreground">{fmtDate(inv.issueDate)}</td>
-                <td className="stat-number text-success">{inv.amountPaid > 0 ? fmtAmount(inv.amountPaid) : "—"}</td>
-                <td className="stat-number text-foreground">
+                <td className="stat-number text-success text-right whitespace-nowrap">{inv.amountPaid > 0 ? fmtAmount(inv.amountPaid) : "—"}</td>
+                <td className="stat-number text-foreground text-right whitespace-nowrap">
                   {inv.amountDue > 0 ? fmtAmount(inv.amountDue) : "—"}
                 </td>
                 <td>
-                  <div className="flex items-center gap-2">
-                    <button className="text-xs text-primary hover:underline flex items-center gap-0.5" onClick={() => setSelectedInvoiceId(inv.id)}>
+                  <div className="flex items-center gap-2 justify-end">
+                    <button className="text-xs text-primary hover:underline flex items-center gap-0.5 whitespace-nowrap" onClick={() => setSelectedInvoiceId(inv.id)}>
                       View <ArrowUpRight size={11} />
                     </button>
                     {inv.amountDue > 0 && inv.status !== "draft" && (
                       <button
-                        className="text-xs text-success hover:underline flex items-center gap-0.5"
+                        className="text-xs text-success hover:underline flex items-center gap-0.5 whitespace-nowrap"
                         onClick={() => {
                           setConfirmInvoice(inv);
                           setConfirmAmount(String(inv.amountDue));
@@ -270,7 +262,7 @@ export default function FreelancerInvoicesPage() {
                           setConfirmTxnId("");
                         }}
                       >
-                        <CheckCircle size={11} /> Confirm Payment
+                        <CheckCircle size={11} /> Confirm
                       </button>
                     )}
                   </div>

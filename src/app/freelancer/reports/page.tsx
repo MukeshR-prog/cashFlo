@@ -82,8 +82,8 @@ export default function MonthlyReportPage() {
   const handlePdfExport = () => {
     try {
       setIsExportingPdf(true);
-      const w = window.open("", "_blank", "noopener,noreferrer,width=1000,height=800");
-      if (!w) { alert("Popup blocked. Please allow popups and try again."); return; }
+      const w = window.open("", "_blank", "width=1000,height=800");
+      if (!w) { alert("Popup blocked. Please allow popups and try again."); setIsExportingPdf(false); return; }
 
       const rows = cashFlowData
         .map((row) => `<tr><td>${row.month}</td><td>${toInr(row.cashIn)}</td><td>${toInr(row.cashOut)}</td></tr>`)
@@ -143,7 +143,7 @@ export default function MonthlyReportPage() {
       `);
       w.document.close();
       w.focus();
-      w.print();
+      setTimeout(() => w.print(), 500);
     } catch (error) {
       console.error("[MONTHLY_REPORT_PDF_EXPORT]", error);
       alert("Unable to export PDF right now. Please try again.");
@@ -154,26 +154,27 @@ export default function MonthlyReportPage() {
 
   return (
     <div className="space-y-5 animate-fade-up">
-      <div className="flex items-center gap-1.5 flex-wrap">
-        {[
-          { href: "/freelancer/reports", label: "Monthly" },
-          { href: "/freelancer/reports/annual", label: "Annual" },
-          { href: "/freelancer/reports/tax", label: "Tax Summary" },
-          { href: "/freelancer/reports/invoice-completion", label: "Invoice Completion" },
-        ].map((tab) => (
-          <Link key={tab.href} href={tab.href} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${tab.href === "/freelancer/reports" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
-            {tab.label}
-          </Link>
-        ))}
-      </div>
-
-      <div className="flex justify-end gap-2">
-        <button onClick={handleCsvExport} disabled={isExportingCsv} className="btn btn-outline btn-sm gap-1.5">
-          <FileDown size={14} /> {isExportingCsv ? "Exporting..." : "CSV"}
-        </button>
-        <button onClick={handlePdfExport} disabled={isExportingPdf} className="btn btn-outline btn-sm gap-1.5">
-          <FileDown size={14} /> {isExportingPdf ? "Preparing..." : "PDF"}
-        </button>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {[
+            { href: "/freelancer/reports", label: "Monthly" },
+            { href: "/freelancer/reports/annual", label: "Annual" },
+            { href: "/freelancer/reports/tax", label: "Tax Summary" },
+            { href: "/freelancer/reports/invoice-completion", label: "Invoice Completion" },
+          ].map((tab) => (
+            <Link key={tab.href} href={tab.href} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${tab.href === "/freelancer/reports" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+              {tab.label}
+            </Link>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={handleCsvExport} disabled={isExportingCsv} className="btn btn-outline btn-sm gap-1.5">
+            <FileDown size={14} /> {isExportingCsv ? "Exporting..." : "CSV"}
+          </button>
+          <button onClick={handlePdfExport} disabled={isExportingPdf} className="btn btn-outline btn-sm gap-1.5">
+            <FileDown size={14} /> {isExportingPdf ? "Preparing..." : "PDF"}
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -185,20 +186,20 @@ export default function MonthlyReportPage() {
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
-              { label: "Total Income", value: toInr(totalIncome), icon: DollarSign, color: "var(--success)" },
-              { label: "Total Expenses", value: toInr(totalExpenses), icon: Receipt, color: "var(--destructive)" },
-              { label: "Net Profit", value: toInr(profit), icon: TrendingUp, color: "var(--chart-3)" },
-              { label: "Cash In Hand", value: `₹${(profit * 0.9).toFixed(0)}`, icon: TrendingDown, color: "var(--chart-1)" },
+              { label: "TOTAL INCOME", value: toInr(totalIncome), icon: DollarSign, color: "var(--success)" },
+              { label: "TOTAL EXPENSES", value: toInr(totalExpenses), icon: Receipt, color: "var(--destructive)" },
+              { label: "NET PROFIT", value: toInr(profit), icon: TrendingUp, color: "var(--chart-3)" },
+              { label: "CASH IN HAND", value: `₹${Math.round(profit * 0.9).toLocaleString("en-IN")}`, icon: TrendingDown, color: "var(--chart-1)" },
             ].map((kpi) => {
               const Icon = kpi.icon;
               return (
-                <div key={kpi.label} className="kpi-card py-3 px-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `color-mix(in oklch, ${kpi.color} 12%, transparent)` }}>
+                <div key={kpi.label} className="kpi-card py-4 px-4">
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: `color-mix(in oklch, ${kpi.color} 12%, transparent)` }}>
                       <Icon size={13} style={{ color: kpi.color }} />
                     </div>
+                    <p className="kpi-label">{kpi.label}</p>
                   </div>
-                  <p className="kpi-label mb-0.5">{kpi.label}</p>
                   <p className="kpi-value text-xl">{kpi.value}</p>
                 </div>
               );

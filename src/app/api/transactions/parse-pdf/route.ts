@@ -35,20 +35,40 @@ function normalizeDate(value: string): Date {
 }
 
 /**
+ * Extract all text from a PDF buffer using pdfjs-dist directly.
+ * Works page-by-page to maximise text extraction.
+ */
+async function extractTextFromPdf(buffer: Buffer): Promise<string> {
+  // pdfjs-dist legacy build works in Node.js without a DOM
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const pdfjsLib = require("pdfjs-dist/legacy/build/pdf.mjs");
+
+  const data = new Uint8Array(buffer);
+  const doc = await pdfjsLib.getDocument({ data, useSystemFonts: true }).promise;
+
+  const pages: string[] = [];
+  for (let i = 1; i <= doc.numPages; i++) {
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const strings = content.items.map((item: any) => item.str || "");
+    pages.push(strings.join(" "));
+  }
+
+  return pages.join("\n");
+}
+
+/**
  * Parses plain text extracted from a bank statement PDF.
  * Supports common Indian bank statement formats (SBI, HDFC, ICICI, Axis, Kotak).
- *
- * Strategy: look for lines that start with a date-like pattern and contain numbers.
  */
 function parseTransactions(text: string): ParsedTransaction[] {
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
   const transactions: ParsedTransaction[] = [];
 
-  // Common date patterns: DD/MM/YYYY, DD-MM-YYYY, DD MMM YYYY, YYYY-MM-DD
   const dateRe =
     /^(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}|\d{4}-\d{2}-\d{2})/i;
 
-  // Number pattern for amounts: 1,234.56 or 1234.56
   const amountRe = /([\d,]+\.?\d*)/g;
 
   for (const line of lines) {
@@ -58,7 +78,6 @@ function parseTransactions(text: string): ParsedTransaction[] {
     const dateStr = dateMatch[1];
     const rest = line.slice(dateStr.length).trim();
 
-    // Extract all numbers from the rest of the line
     const amounts: number[] = [];
     let m;
     while ((m = amountRe.exec(rest)) !== null) {
@@ -69,16 +88,13 @@ function parseTransactions(text: string): ParsedTransaction[] {
 
     if (amounts.length === 0) continue;
 
-    // Heuristic: last amount is balance, second-to-last is debit or credit
     const balance = amounts.length >= 2 ? amounts[amounts.length - 1] : null;
     const transactionAmount = amounts.length >= 2 ? amounts[amounts.length - 2] : amounts[0];
 
-    // Try to detect debit (Dr) or credit (Cr) indicator
     const lowerRest = rest.toLowerCase();
     const isDebit = /\bdr\b|debit|withdrawal|withdraw/.test(lowerRest);
     const isCredit = /\bcr\b|credit|deposit/.test(lowerRest);
 
-    // Description = everything before the first number in rest
     const firstNumIdx = rest.search(/[\d,]/);
     const description = firstNumIdx > 0 ? rest.slice(0, firstNumIdx).trim() : rest.trim();
 
@@ -110,28 +126,23 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // ── pdf-parse import ──────────────────────────────────────────
-    // IMPORTANT: We import from 'pdf-parse/lib/pdf-parse.js' directly
-    // because the main index.js has a bug: it checks `!module.parent` and
-    // tries to readFileSync a test PDF that doesn't exist in node_modules.
-    // Importing the inner module skips that code entirely.
+    // ── Extract text using pdfjs-dist directly ───────────────────
     let text = "";
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const pdfParse = require("pdf-parse/lib/pdf-parse.js");
-      const result = await pdfParse(buffer);
-      text = result?.text ?? "";
+      text = await extractTextFromPdf(buffer);
     } catch (parseError) {
-      console.error("[PARSE_PDF] pdf-parse failed:", parseError);
+      console.error("[PARSE_PDF] pdfjs-dist extraction failed:", parseError);
       return NextResponse.json(
-        { error: "PDF parsing failed. Make sure the file is a text-based PDF (not scanned/image). Try uploading a CSV instead." },
+        { error: "PDF parsing failed. The file may be corrupted or password-protected. Try uploading a CSV instead." },
         { status: 422 }
       );
     }
 
-    if (!text || text.trim().length < 50) {
+    console.log("[PARSE_PDF] Extracted text length:", text.trim().length, "| First 300 chars:", text.trim().slice(0, 300));
+
+    if (!text || text.trim().length < 5) {
       return NextResponse.json(
-        { error: "Could not extract text from PDF. The file might be scanned or image-based. Try a CSV export instead." },
+        { error: "Could not extract text from PDF. The file might be scanned or image-based. Try a CSV export instead.", extractedLength: text?.trim().length ?? 0 },
         { status: 422 }
       );
     }
@@ -187,7 +198,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({
-      rawText: text.slice(0, 2000), // First 2000 chars for debugging
+      rawText: text.slice(0, 2000),
       transactions,
       total: transactions.length,
       persisted: persist,

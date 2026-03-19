@@ -121,60 +121,62 @@ export default function FreelancerExpensesPage() {
       </div>
 
       {/* Filter */}
-      <div className="premium-card rounded-2xl px-4 py-4 md:px-5 md:py-5 space-y-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            {/* <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary/75">Smart Filters</p> */}
-            <p className="text-sm font-semibold text-foreground">Refine expense results</p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] font-semibold text-muted-foreground">Date</span>
+      <div className="premium-card rounded-2xl px-5 py-5 space-y-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm font-semibold text-foreground">Refine expense results</p>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold text-muted-foreground whitespace-nowrap">Date</span>
             <DatePickerInput
-              className="w-44"
+              className="w-36"
               inputClassName="text-xs"
               value={dateFilter}
               onChange={setDateFilter}
               ariaLabel="Filter by date"
               title="Filter by date"
             />
-            <button
-              type="button"
-              onClick={() => {
-                setTypeFilter("All");
-                setCatFilter("All");
-                setDateFilter("");
-              }}
-              disabled={!hasActiveFilters}
-              className="btn btn-ghost btn-sm"
-            >
-              Clear
-            </button>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={() => {
+                  setTypeFilter("All");
+                  setCatFilter("All");
+                  setDateFilter("");
+                }}
+                className="text-xs font-medium text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
+              >
+                Clear all
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {types.map((t) => (
-            <button
-              key={t}
-              onClick={() => setTypeFilter(t)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                typeFilter === t
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+        <div className="h-px bg-border/60" />
 
-        <div className="overflow-x-auto scrollbar-hide -mx-1 px-1">
-          <div className="flex items-center gap-1.5 w-max pr-2">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            {types.map((t) => (
+              <button
+                key={t}
+                onClick={() => setTypeFilter(t)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
+                  typeFilter === t
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+
+          <div className="w-px h-5 bg-border/60" />
+
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
             {categories.map((c) => (
               <button
                 key={c}
                 onClick={() => setCatFilter(c)}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors whitespace-nowrap ${
                   catFilter === c
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
