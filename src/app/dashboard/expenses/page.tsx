@@ -76,7 +76,7 @@ export default function ExpensesPage() {
   // Build URL with filters
   const params = new URLSearchParams();
   params.set("page", String(page));
-  params.set("limit", "20");
+  params.set("limit", "10");
   if (selectedCategory !== "All") params.set("category", selectedCategory);
   if (searchQuery)                 params.set("search", searchQuery);
 
@@ -223,11 +223,11 @@ export default function ExpensesPage() {
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input type="text" placeholder="Search expenses…" value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-            className="field-input pl-9 py-2 text-sm h-9" />
+            className="field-input pl-9 py-2 text-sm h-11" />
         </div>
         <div className="relative">
           <select value={selectedCategory} onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
-            className="field-input h-9 pr-8 appearance-none cursor-pointer text-sm">
+            className="field-input h-11 pr-8 appearance-none cursor-pointer text-sm">
             {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
           </select>
           <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />

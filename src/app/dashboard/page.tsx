@@ -2,7 +2,7 @@
 
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { KpiCard } from "@/components/ui/KpiCard";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { toast } from "@/components/ui/Toaster";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -122,11 +122,11 @@ export default function DashboardPage() {
   const loading = loadingS || loadingC || loadingT;
 
   // Auto-seed when student account is empty (silent, no button needed)
-  const [autoSeeded, setAutoSeeded] = useState(false);
+  const autoSeededRef = useRef(false);
   useEffect(() => {
-    if (autoSeeded || loadingS) return;
+    if (autoSeededRef.current || loadingS) return;
     if (emptyS) {
-      setAutoSeeded(true);
+      autoSeededRef.current = true;
       fetch("/api/seed", { method: "POST", credentials: "include" })
         .then((res) => res.json())
         .then((data) => {
@@ -134,7 +134,7 @@ export default function DashboardPage() {
         })
         .catch(() => {});
     }
-  }, [loadingS, emptyS, autoSeeded]);
+  }, [loadingS, emptyS]);
 
   // Format trend for chart — use backend month labels or raw mock
   const spendTrend = (trendData?.trend ?? MOCK_TREND).map((row) => ({
