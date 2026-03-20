@@ -16,6 +16,14 @@ const sendReminderSchema = z.object({
   type: z.enum(["email"]).default("email"),
 });
 
+function getRequestBaseUrl(req: NextRequest): string {
+  const forwardedProto = req.headers.get("x-forwarded-proto");
+  const forwardedHost = req.headers.get("x-forwarded-host");
+  const host = forwardedHost ?? req.headers.get("host") ?? "localhost:3000";
+  const protocol = forwardedProto ?? (host.includes("localhost") ? "http" : "https");
+  return `${protocol}://${host}`;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const auth = await requireSession();
@@ -64,6 +72,7 @@ export async function POST(req: NextRequest) {
 
     // Send reminder email (reuses invoice email template)
     try {
+      const appBaseUrl = getRequestBaseUrl(req);
       await sendInvoiceEmail({
         to: clientEmail,
         clientName,
@@ -75,6 +84,7 @@ export async function POST(req: NextRequest) {
         paymentLink: invoice.paymentLink,
         notes: `PAYMENT REMINDER\n\nThis is a friendly reminder that payment for invoice ${invoice.invoiceNumber} ${invoice.amountDue > 0 ? `of ₹${invoice.amountDue.toLocaleString("en-IN")} is due` : "is pending"}. Please complete payment at your earliest convenience.\n\n${invoice.notes ?? ""}`.trim(),
         freelancerName,
+        appBaseUrl,
       });
 
       await Reminder.findByIdAndUpdate(reminder._id, { status: "sent", sentAt: new Date() });

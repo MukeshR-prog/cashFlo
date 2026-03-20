@@ -30,6 +30,14 @@ const createInvoiceSchema = z.object({
   status: z.enum(["draft", "sent", "due", "overdue", "partially_paid", "paid"]).optional(),
 });
 
+function getRequestBaseUrl(req: NextRequest): string {
+  const forwardedProto = req.headers.get("x-forwarded-proto");
+  const forwardedHost = req.headers.get("x-forwarded-host");
+  const host = forwardedHost ?? req.headers.get("host") ?? "localhost:3000";
+  const protocol = forwardedProto ?? (host.includes("localhost") ? "http" : "https");
+  return `${protocol}://${host}`;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const auth = await requireSession();
@@ -131,6 +139,7 @@ export async function POST(req: NextRequest) {
     // Auto-send email when invoice status is "sent"
     if (created.status === "sent") {
       try {
+        const appBaseUrl = getRequestBaseUrl(req);
         const [clientDoc, userDoc] = await Promise.all([
           Client.findById(created.clientId).lean(),
           User.findById(auth.userId).lean(),
@@ -149,6 +158,7 @@ export async function POST(req: NextRequest) {
             paymentLink: created.paymentLink,
             notes: created.notes,
             freelancerName,
+            appBaseUrl,
           });
         }
       } catch (emailErr) {
